@@ -38,6 +38,10 @@ export function IdeaPanel({ onClose }: { onClose: () => void }) {
   }
 
   const send = async () => {
+    if (!navigator.onLine) {
+      setError("Pas de connexion Internet : l'assistant a besoin d'Internet. Le reste de l'application fonctionne hors connexion.")
+      return
+    }
     setPhase('loading')
     setError('')
     try {

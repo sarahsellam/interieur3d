@@ -533,3 +533,34 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
 @media (max-width: 860px) {
   .idea-panel { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(8px + var(--safe-b)); max-height: 62vh; }
 }
+
+/* ---------- Application installée ---------- */
+.app-banner {
+  position: fixed; z-index: 70; left: 50%; transform: translateX(-50%); bottom: calc(16px + var(--safe-b));
+  display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px;
+  background: var(--ink); color: var(--white); box-shadow: 0 10px 30px rgba(41,35,33,.25); font-size: 14px; max-width: calc(100vw - 24px);
+}
+.app-banner .icon-btn { color: var(--white); }
+.app-banner .icon-btn:hover { background: rgba(255,255,255,.12); }
+.app-banner.ok { background: var(--green); padding: 10px 16px; }
+.app-banner svg { width: 18px; height: 18px; flex: none; }
+.offline-badge {
+  position: fixed; z-index: 65; right: max(12px, var(--safe-r)); bottom: calc(12px + var(--safe-b)); pointer-events: none;
+  background: var(--sand); color: var(--ink); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap;
+}
+.install-card {
+  margin-top: 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center;
+  background: var(--white); border-radius: 18px; box-shadow: var(--shadow); padding: 18px 20px;
+}
+.install-icon img { width: 64px; height: 64px; border-radius: 15px; display: block; }
+.install-text h2 { font-size: 26px; }
+.install-text p, .install-text ol { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; }
+.install-text ol { padding-left: 18px; display: grid; gap: 3px; }
+.share-glyph { display: inline-block; vertical-align: -3px; color: #2a7cf6; }
+.share-glyph svg { width: 16px; height: 16px; }
+.install-actions { display: flex; flex-direction: column; gap: 6px; }
+.backup .choice-row .btn svg { width: 18px; height: 18px; }
+@media (max-width: 640px) {
+  .install-card { grid-template-columns: auto 1fr; }
+  .install-actions { grid-column: 1 / -1; flex-direction: row; }
+}

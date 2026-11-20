@@ -114,8 +114,14 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.
 
+## Application mobile
+- ✅ Application installable depuis le navigateur (écran d'accueil), hors connexion,
+  mises à jour, écrans de démarrage, sauvegarde/restauration dans un fichier.
+- Plus tard, si besoin : publication dans l'App Store et Google Play (emballage Capacitor,
+  compte Apple Developer 99 $/an, compte Google Play 25 $, politique de confidentialité, validation Apple).
+
 ## Étape 9 — Finitions
-- Fonctionnement hors ligne, temps de chargement, qualité graphique adaptée à l'appareil.
+- Temps de chargement, qualité graphique adaptée à l'appareil.
 - Catalogue élargi (cuisine, salle de bain, bureau), toujours en CC0.
 
 ## Points d'attention

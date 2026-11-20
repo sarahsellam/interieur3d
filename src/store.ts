@@ -43,6 +43,8 @@ interface State {
 
   // Navigation et projets
   goHome: () => void
+  /** Relit tout ce qui est enregistré dans l'appareil (après l'import d'une sauvegarde) */
+  reloadFromStorage: () => void
   startWizard: () => void
   createProject: (p: { name: string; roomType: RoomType; start: StartKind; room: Room; references: RefImage[] }) => void
   openProject: (id: string) => void
@@ -174,6 +176,11 @@ export const useStore = create<State>()((set, get) => {
     ideaOpen: false,
     setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null } : { layoutPreview: null }) }),
 
+    reloadFromStorage: () => {
+      const myFurniture = loadMyFurniture()
+      registerCustomFurniture(myFurniture)
+      set({ projects: loadProjects(), inspirations: loadInspirations(), myFurniture })
+    },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
       set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null })

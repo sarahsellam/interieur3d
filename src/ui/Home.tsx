@@ -8,6 +8,7 @@ import type { StartKind } from '../model/templates'
 import { deleteImage } from '../model/storage'
 import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
+import { BackupSection, InstallCard } from './AppShell'
 
 const dateFr = (t: number) => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
 
@@ -51,6 +52,8 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      <InstallCard />
 
       <section className="home-section">
         <div className="section-head">
@@ -111,6 +114,8 @@ export function Home() {
         </div>
         {showInspi ? <InspirationBoard /> : inspirations.length === 0 && <p className="empty">Gardez ici les photos et les liens qui vous inspirent.</p>}
       </section>
+
+      <BackupSection />
     </div>
   )
 }

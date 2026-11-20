@@ -7,6 +7,9 @@ import { Home, Wizard } from './ui/Home'
 import { CATALOG } from './data/catalog'
 import { Problem, hasWebGL2 } from './ui/Fallback'
 import { useStore } from './store'
+import { OfflineBadge, UpdateBanner, requestPersistentStorage } from './ui/AppShell'
+
+requestPersistentStorage()
 
 /** Qualité graphique : réduite sur les petits téléphones pour rester fluide. */
 function detectQuality(): 'high' | 'low' {
@@ -25,8 +28,16 @@ export default function App() {
     if (!thumb) preloadCatalog(CATALOG.map((c) => c.file))
   }, [thumb])
   if (thumb) return <ThumbScene id={thumb} />
-  if (screenName === 'accueil') return <Home />
-  if (screenName === 'assistant') return <Wizard />
+  return (
+    <>
+      <UpdateBanner />
+      <OfflineBadge />
+      {screenName === 'accueil' ? <Home /> : screenName === 'assistant' ? <Wizard /> : <EditorScreen quality={quality} />}
+    </>
+  )
+}
+
+function EditorScreen({ quality }: { quality: 'high' | 'low' }) {
   if (!hasWebGL2()) return <Problem title="Ce navigateur ne peut pas afficher la 3D" detail="WebGL 2 indisponible" />
   return (
     <div className="app">

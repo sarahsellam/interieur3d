@@ -33,6 +33,11 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 - **Inspirations utiles sans IA** : couleurs principales de la photo à appliquer à un mur ou à un
   meuble, idées tirées de la note (« commode en bois clair », « mur vert »…).
 - Les projets restent **privés**, enregistrés dans l'appareil (aucun compte pour l'instant).
+- **Application installable** (iPad, iPhone, Android, ordinateur) : icône, écran de démarrage,
+  ouverture en plein écran, fonctionnement **hors connexion** (sauf l'assistant IA), mise à jour
+  proposée quand une nouvelle version est publiée.
+- **Sauvegarde dans un fichier** (et restauration) : copie de secours et passage des projets de
+  Safari vers l'application installée, qui ne partagent pas leurs données sur iPad/iPhone.
 
 ## Technologies
 
@@ -44,6 +49,7 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 | postprocessing (N8AO) | Ombres de contact et rendu plus réaliste |
 | Zustand | Mémoire de l'application (projets, versions, sélection, historique) |
 | idb-keyval | Enregistrement des images (plans, photos) dans l'appareil |
+| vite-plugin-pwa (Workbox) | Application installable et fonctionnement hors connexion |
 | pdf.js | Conversion de la première page d'un plan PDF en image |
 | Inter, Instrument Serif | Polices de l'interface (licence SIL OFL, intégrées) |
 | Vite | Lance l'application en local et prépare la version à mettre en ligne |
