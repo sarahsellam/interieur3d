@@ -1,8 +1,9 @@
 // Catalogue des meubles disponibles.
-// Tous les modèles viennent de Poly Haven (https://polyhaven.com) sous licence CC0.
+// Modèles 3D : Poly Haven (https://polyhaven.com), licence CC0.
+// Meubles « maison » : construits par le code, avec des textures Poly Haven (CC0).
 // Dimensions en mètres : largeur (x) × profondeur (z) × hauteur (y).
 
-export type FurnitureCategory = 'assise' | 'table' | 'rangement' | 'deco'
+export type FurnitureCategory = 'lit' | 'assise' | 'table' | 'rangement' | 'deco'
 
 export interface CatalogItem {
   id: string
@@ -12,39 +13,95 @@ export interface CatalogItem {
   width: number
   depth: number
   height: number
-  /** Meuble construit par le code (pas de fichier 3D) */
+  /** Meuble construit par le code (dimensions réellement modifiables) */
   procedural?: boolean
   /** Rotation à appliquer pour que la face avant regarde vers +Z (radians). */
   frontOffset: number
+  /** Posé à plat au sol (tapis) : peut passer sous tous les meubles */
+  floorLayer?: boolean
+  /** Se range sous une table ou une coiffeuse (chaise, tabouret) */
+  tucksUnder?: boolean
+  /** Accueille une chaise ou un tabouret dessous (table, bureau, coiffeuse) */
+  hostsUnder?: boolean
+  /** Type de matière principale, pour proposer les bonnes couleurs */
+  material: 'tissu' | 'bois' | 'cuir' | 'vegetal'
   author: string
   source: string
 }
 
 const ph = (id: string) => `https://polyhaven.com/a/${id}`
+const HOME = 'Modèle maison'
 
 export const CATALOG: CatalogItem[] = [
-  { id: 'sofa_lin', name: 'Canapé en lin', category: 'assise', file: '', procedural: true, width: 2.2, depth: 0.95, height: 0.8, frontOffset: 0, author: 'Modèle maison, texture lin de Poly Haven', source: ph('rough_linen') },
-  { id: 'sofa_02', name: 'Canapé 3 places', category: 'assise', file: 'models/sofa_02/model.json', width: 1.81, depth: 0.82, height: 0.71, frontOffset: 0, author: 'Kirill Sannikov', source: ph('sofa_02') },
-  { id: 'mid_century_lounge_chair', name: 'Fauteuil lounge', category: 'assise', file: 'models/mid_century_lounge_chair/model.json', width: 1.01, depth: 1.19, height: 1.17, frontOffset: 0, author: 'Kuutti Siitonen', source: ph('mid_century_lounge_chair') },
-  { id: 'dining_chair_02', name: 'Chaise', category: 'assise', file: 'models/dining_chair_02/model.json', width: 0.43, depth: 0.58, height: 0.97, frontOffset: 0, author: 'James Ray Cock', source: ph('dining_chair_02') },
-  { id: 'modern_coffee_table_01', name: 'Table basse', category: 'table', file: 'models/modern_coffee_table_01/model.json', width: 1.2, depth: 0.6, height: 0.39, frontOffset: Math.PI / 2, author: 'Amin', source: ph('modern_coffee_table_01') },
-  { id: 'wooden_table_02', name: 'Table à manger', category: 'table', file: 'models/wooden_table_02/model.json', width: 1.13, depth: 0.71, height: 0.8, frontOffset: 0, author: 'Serhii Khromov', source: ph('wooden_table_02') },
-  { id: 'modern_wooden_cabinet', name: 'Buffet bas', category: 'rangement', file: 'models/modern_wooden_cabinet/model.json', width: 2.44, depth: 0.52, height: 0.68, frontOffset: 0, author: 'Patrik Pangerl', source: ph('modern_wooden_cabinet') },
-  { id: 'wooden_display_shelves_01', name: 'Étagère', category: 'rangement', file: 'models/wooden_display_shelves_01/model.json', width: 1.08, depth: 0.37, height: 1.56, frontOffset: -Math.PI / 2, author: 'James Ray Cock', source: ph('wooden_display_shelves_01') },
-  { id: 'rug_wool', name: 'Tapis en laine', category: 'deco', file: '', procedural: true, width: 2.3, depth: 1.6, height: 0.012, frontOffset: 0, author: 'Modèle maison, texture laine de Poly Haven', source: ph('poly_wool_herringbone') },
-  { id: 'potted_plant_02', name: 'Plante en pot', category: 'deco', file: 'models/potted_plant_02/model.json', width: 0.7, depth: 0.66, height: 0.84, frontOffset: 0, author: 'Rico Cilliers', source: ph('potted_plant_02') },
+  // Lits
+  { id: 'lit_double', name: 'Lit double', category: 'lit', file: '', procedural: true, width: 1.68, depth: 2.12, height: 1.05, frontOffset: 0, material: 'tissu', author: HOME, source: ph('rough_linen') },
+  { id: 'lit_simple', name: 'Lit simple', category: 'lit', file: '', procedural: true, width: 0.98, depth: 2.02, height: 0.95, frontOffset: 0, material: 'tissu', author: HOME, source: ph('rough_linen') },
+  // Assises
+  { id: 'sofa_lin', name: 'Canapé en lin', category: 'assise', file: '', procedural: true, width: 2.2, depth: 0.95, height: 0.8, frontOffset: 0, material: 'tissu', author: HOME, source: ph('rough_linen') },
+  { id: 'sofa_02', name: 'Canapé capitonné', category: 'assise', file: 'models/sofa_02/model.json', width: 1.81, depth: 0.82, height: 0.71, frontOffset: 0, material: 'cuir', author: 'Kirill Sannikov', source: ph('sofa_02') },
+  { id: 'mid_century_lounge_chair', name: 'Fauteuil lounge', category: 'assise', file: 'models/mid_century_lounge_chair/model.json', width: 1.01, depth: 1.19, height: 1.17, frontOffset: 0, material: 'cuir', author: 'Kuutti Siitonen', source: ph('mid_century_lounge_chair') },
+  { id: 'dining_chair_02', name: 'Chaise', category: 'assise', file: 'models/dining_chair_02/model.json', width: 0.43, depth: 0.58, height: 0.97, frontOffset: 0, tucksUnder: true, material: 'cuir', author: 'James Ray Cock', source: ph('dining_chair_02') },
+  { id: 'tabouret', name: 'Tabouret', category: 'assise', file: '', procedural: true, width: 0.42, depth: 0.36, height: 0.46, frontOffset: 0, tucksUnder: true, material: 'tissu', author: HOME, source: ph('rough_linen') },
+  // Tables
+  { id: 'coiffeuse', name: 'Coiffeuse', category: 'table', file: '', procedural: true, width: 1.0, depth: 0.45, height: 1.55, frontOffset: 0, hostsUnder: true, material: 'bois', author: HOME, source: ph('oak_veneer_01') },
+  { id: 'bureau', name: 'Bureau', category: 'table', file: '', procedural: true, width: 1.2, depth: 0.6, height: 0.75, frontOffset: 0, hostsUnder: true, material: 'bois', author: HOME, source: ph('oak_veneer_01') },
+  { id: 'wooden_table_02', name: 'Table à manger', category: 'table', file: 'models/wooden_table_02/model.json', width: 1.13, depth: 0.71, height: 0.8, frontOffset: 0, hostsUnder: true, material: 'bois', author: 'Serhii Khromov', source: ph('wooden_table_02') },
+  { id: 'modern_coffee_table_01', name: 'Table basse', category: 'table', file: 'models/modern_coffee_table_01/model.json', width: 1.2, depth: 0.6, height: 0.39, frontOffset: Math.PI / 2, material: 'bois', author: 'Amin', source: ph('modern_coffee_table_01') },
+  // Rangements
+  { id: 'chevet', name: 'Table de chevet', category: 'rangement', file: '', procedural: true, width: 0.45, depth: 0.38, height: 0.52, frontOffset: 0, material: 'bois', author: HOME, source: ph('oak_veneer_01') },
+  { id: 'commode', name: 'Commode', category: 'rangement', file: '', procedural: true, width: 1.2, depth: 0.5, height: 0.85, frontOffset: 0, material: 'bois', author: HOME, source: ph('oak_veneer_01') },
+  { id: 'armoire', name: 'Armoire', category: 'rangement', file: '', procedural: true, width: 1.2, depth: 0.6, height: 2.0, frontOffset: 0, material: 'bois', author: HOME, source: ph('oak_veneer_01') },
+  { id: 'modern_wooden_cabinet', name: 'Buffet bas', category: 'rangement', file: 'models/modern_wooden_cabinet/model.json', width: 2.44, depth: 0.52, height: 0.68, frontOffset: 0, material: 'bois', author: 'Patrik Pangerl', source: ph('modern_wooden_cabinet') },
+  { id: 'wooden_display_shelves_01', name: 'Étagère', category: 'rangement', file: 'models/wooden_display_shelves_01/model.json', width: 1.08, depth: 0.37, height: 1.56, frontOffset: -Math.PI / 2, material: 'bois', author: 'James Ray Cock', source: ph('wooden_display_shelves_01') },
+  // Déco
+  { id: 'rug_wool', name: 'Tapis en laine', category: 'deco', file: '', procedural: true, width: 2.3, depth: 1.6, height: 0.012, frontOffset: 0, floorLayer: true, material: 'tissu', author: HOME, source: ph('poly_wool_herringbone') },
+  { id: 'potted_plant_02', name: 'Plante en pot', category: 'deco', file: 'models/potted_plant_02/model.json', width: 0.7, depth: 0.66, height: 0.84, frontOffset: 0, material: 'vegetal', author: 'Rico Cilliers', source: ph('potted_plant_02') },
 ]
 
-/** Suspension affichée au plafond en mode visite (Poly Haven, CC0). */
+/** Suspension affichée au plafond en mode « à hauteur des yeux » (Poly Haven, CC0). */
 export const CEILING_LAMP = { file: 'models/modern_ceiling_lamp_01/model.json', author: 'James Ray Cock', source: ph('modern_ceiling_lamp_01') }
 
 export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CATALOG.map((c) => [c.id, c]))
 
 export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
+  lit: 'Lits',
   assise: 'Assises',
-  table: 'Tables',
+  table: 'Tables et coiffeuses',
   rangement: 'Rangements',
   deco: 'Déco',
+}
+
+/** Couleurs proposées pour les meubles, selon leur matière. */
+export const ITEM_COLORS: Record<CatalogItem['material'], { name: string; hex: string }[]> = {
+  tissu: [
+    { name: 'Lin naturel', hex: '#d8cdb9' },
+    { name: 'Blanc cassé', hex: '#efebe4' },
+    { name: 'Gris perle', hex: '#b9b6b0' },
+    { name: 'Anthracite', hex: '#55524e' },
+    { name: 'Sauge', hex: '#a3ad94' },
+    { name: 'Bleu nuit', hex: '#3e4a5c' },
+    { name: 'Terracotta', hex: '#b9765a' },
+    { name: 'Rose poudré', hex: '#ddb8b0' },
+    { name: 'Bordeaux', hex: '#742f45' },
+  ],
+  bois: [
+    { name: 'Chêne clair', hex: '#d9b98f' },
+    { name: 'Chêne naturel', hex: '#b88d5e' },
+    { name: 'Noyer', hex: '#7a5338' },
+    { name: 'Blanc', hex: '#f1eee8' },
+    { name: 'Sauge', hex: '#a9b29c' },
+    { name: 'Gris', hex: '#9a958e' },
+    { name: 'Noir', hex: '#3a3633' },
+    { name: 'Rose poudré', hex: '#dfbdb5' },
+  ],
+  cuir: [
+    { name: 'Cognac', hex: '#b07850' },
+    { name: 'Chocolat', hex: '#6d4a37' },
+    { name: 'Noir', hex: '#4a4542' },
+    { name: 'Camel', hex: '#c9a77f' },
+    { name: 'Vert bouteille', hex: '#4f6150' },
+  ],
+  vegetal: [],
 }
 
 export const assetUrl = (path: string) => `${import.meta.env.BASE_URL}${path}`

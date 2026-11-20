@@ -7,9 +7,13 @@ export const WALL_COLORS = [
   { name: 'Lin', hex: '#e2d8c8' },
   { name: 'Greige', hex: '#cdc5b8' },
   { name: 'Argile', hex: '#c9b39d' },
+  { name: 'Rose poudré', hex: '#e3c4bd' },
+  { name: 'Rose argile', hex: '#d4a597' },
+  { name: 'Vieux rose', hex: '#b98a86' },
+  { name: 'Terracotta', hex: '#b9765a' },
   { name: 'Sauge', hex: '#b9c0ad' },
-  { name: 'Bleu brume', hex: '#bcc6cc' },
   { name: 'Vert de gris', hex: '#7f8b7f' },
+  { name: 'Bleu brume', hex: '#bcc6cc' },
   { name: 'Taupe', hex: '#8c8178' },
 ]
 

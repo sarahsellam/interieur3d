@@ -5,18 +5,23 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 
 ## Ce que fait l'application
 
-- Une pièce dont on règle la largeur, la longueur et la hauteur sous plafond.
-- 8 meubles réalistes (vrais modèles 3D) : canapé, fauteuil, chaise, table basse,
-  table à manger, buffet bas, étagère, plante.
-- Ajouter, déplacer (au doigt ou à la souris), pivoter, dupliquer, supprimer un meuble.
-- Trois vues : **Vue 3D** (maquette dont on fait le tour), **Visite** (à hauteur d'yeux,
-  on marche dans la pièce) et **Plan** (vue du dessus au style plan d'architecte, avec cotes).
-- Architecture réaliste : murs en enduit peint, fenêtres à deux battants avec vue sur un
-  jardin, porte à panneaux et chambranle, plinthes et corniches moulurées, plafond, suspension.
-- Lumière naturelle : soleil et lumière du ciel entrant par les fenêtres, ombres douces,
-  occlusion ambiante, reflets subtils.
-- Couleur des murs et 6 revêtements de sol (textures PBR complètes).
-- Le projet est gardé automatiquement dans le navigateur.
+- **Accueil** : « Créer mon espace », projets récents, inspirations.
+- **Création en trois étapes** : Mon espace (nom, type de pièce, pièce vide / meublée /
+  exemple, dimensions, plan et photos de la pièce) → Mes inspirations → Mon aménagement.
+- **Trois vues** : Plan (style plan d'architecte, avec cotes, sens d'ouverture des portes),
+  Vue 3D (maquette dont on fait le tour) et À hauteur des yeux (on marche dans la pièce).
+- **Meubles** : catalogue avec bouton +, dont un lit, une coiffeuse, une table de chevet, une commode
+  et une armoire. Un toucher sélectionne le meuble ; le panneau du bas permet de le déplacer,
+  le tourner, changer sa couleur et ses dimensions, le dupliquer, le verrouiller ou le supprimer.
+- **Pièce** : dimensions saisies directement, couleur choisie mur par mur, fenêtres,
+  portes-fenêtres, portes, placards intégrés et niches à placer et redimensionner le long des murs.
+- **Aide au placement** : alignement facultatif sur la grille ou sur les murs, alertes de
+  chevauchement (le tapis sous un meuble et les chaises rangées sous une table restent permis).
+- **Annuler / Rétablir**, enregistrement automatique et bouton « Enregistrer ».
+- **Versions** : dupliquer un aménagement pour comparer deux idées (avec vignettes).
+- **Références** : plan importé (image ou PDF) et photos de la pièce ; inspirations (photo de
+  la galerie ou lien Pinterest + note). Une image peut rester visible à côté de la pièce.
+- Les projets restent **privés**, enregistrés dans l'appareil (aucun compte pour l'instant).
 
 ## Technologies
 
@@ -26,7 +31,10 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 | React | Construction de l'interface (boutons, panneaux) |
 | Three.js + React Three Fiber + Drei | Affichage 3D dans le navigateur (WebGL) |
 | postprocessing (N8AO) | Ombres de contact et rendu plus réaliste |
-| Zustand | Mémoire de l'application (pièce, meubles, sélection) |
+| Zustand | Mémoire de l'application (projets, versions, sélection, historique) |
+| idb-keyval | Enregistrement des images (plans, photos) dans l'appareil |
+| pdf.js | Conversion de la première page d'un plan PDF en image |
+| Inter, Instrument Serif | Polices de l'interface (licence SIL OFL, intégrées) |
 | Vite | Lance l'application en local et prépare la version à mettre en ligne |
 | glTF-Transform | Optimise les modèles 3D pour les téléphones |
 
@@ -62,9 +70,10 @@ public/
   icons/      icônes de l'application (écran d'accueil)
 src/
   data/       catalogue des meubles, couleurs et sols
-  three/      tout ce qui est 3D (pièce, meubles, caméras, lumières, déplacement)
-  ui/         panneaux et boutons
-  store.ts    état de l'application et sauvegarde
+  model/      données d'un projet, calculs (chevauchements, alignements), enregistrement
+  three/      tout ce qui est 3D (pièce, ouvertures, meubles, caméras, lumières, déplacement)
+  ui/         accueil, assistant, éditeur, inspirations
+  store.ts    état de l'application, versions, annuler / rétablir
 ```
 
 ## Ajouter un meuble
@@ -100,5 +109,8 @@ dark_wooden_planks, smooth_concrete_floor, large_floor_tiles_02, marble_tiles ;
 murs et plafond painted_plaster_wall. Panoramas : « lebombo » (lumière d'ambiance)
 et « residential_garden » (vue par les fenêtres).
 
-Les fenêtres, la porte, les plinthes et les corniches sont dessinées par le code
+Bois des meubles maison : « oak_veneer_01 » (Poly Haven, CC0). Le lit, la coiffeuse, le
+tabouret, la table de chevet, la commode, l'armoire et le bureau sont des modèles maison.
+
+Les fenêtres, portes, placards, niches, plinthes et corniches sont dessinés par le code
 (fichier `src/three/architecture.tsx`).

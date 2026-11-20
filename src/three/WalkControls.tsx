@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useStore } from '../store'
+import { openingCenter, wallAxes } from '../model/geometry'
 
 export const EYE_HEIGHT = 1.6
 const MARGIN = 0.3
@@ -14,7 +15,7 @@ const SPEED = 1.3 // m/s
 
 export function WalkControls() {
   const { camera, gl, set, invalidate } = useThree()
-  const room = useStore((s) => s.room)
+  const room = useStore((s) => s.layout.room)
 
   const st = useMemo(
     () => ({
@@ -37,11 +38,22 @@ export function WalkControls() {
     return v
   }
 
-  // Position de départ : dans un angle, en regardant vers la fenêtre principale
+  // Position de départ : sur le seuil de la porte, comme en entrant dans la pièce
   useEffect(() => {
-    st.pos.set(room.width / 2 - 0.8, EYE_HEIGHT, room.depth / 2 - 0.75)
-    clamp(st.pos)
-    st.yaw = Math.atan2(st.pos.x - -room.width / 2, st.pos.z - -room.depth * 0.1)
+    const layout = useStore.getState().layout
+    const door = layout.openings.find((o) => o.kind === 'porte') ?? layout.openings.find((o) => o.kind === 'porte-fenetre')
+    if (door) {
+      const c = openingCenter(room, door)
+      const n = wallAxes(room, door.wall).inward
+      st.pos.set(c.x + n[0] * 0.55, EYE_HEIGHT, c.z + n[1] * 0.55)
+      clamp(st.pos)
+      // Regarde vers le centre de la pièce
+      st.yaw = Math.atan2(st.pos.x, st.pos.z)
+    } else {
+      st.pos.set(room.width / 2 - 0.8, EYE_HEIGHT, room.depth / 2 - 0.75)
+      clamp(st.pos)
+      st.yaw = Math.atan2(st.pos.x - -room.width / 2, st.pos.z - -room.depth * 0.1)
+    }
     st.pitch = -0.1
     st.target = null
     invalidate()

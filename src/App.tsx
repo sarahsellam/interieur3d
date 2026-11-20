@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { Scene } from './three/Scene'
 import { ThumbScene } from './three/ThumbScene'
 import { preloadCatalog } from './three/Furniture'
-import { SidePanel } from './ui/Panels'
-import { Hint, Loader, SelectionBar, TopBar, VisitHint } from './ui/Overlay'
+import { EditorUI, Loader } from './ui/Editor'
+import { Home, Wizard } from './ui/Home'
 import { CATALOG } from './data/catalog'
 import { Problem, hasWebGL2 } from './ui/Fallback'
+import { useStore } from './store'
 
 /** Qualité graphique : réduite sur les petits téléphones pour rester fluide. */
 function detectQuality(): 'high' | 'low' {
@@ -19,19 +20,20 @@ function detectQuality(): 'high' | 'low' {
 export default function App() {
   const thumb = new URLSearchParams(location.search).get('thumb')
   const quality = useMemo(detectQuality, [])
-  useMemo(() => { if (!thumb) preloadCatalog(CATALOG.map((c) => c.file)) }, [thumb])
+  const screenName = useStore((s) => s.screen)
+  useMemo(() => {
+    if (!thumb) preloadCatalog(CATALOG.map((c) => c.file))
+  }, [thumb])
   if (thumb) return <ThumbScene id={thumb} />
+  if (screenName === 'accueil') return <Home />
+  if (screenName === 'assistant') return <Wizard />
   if (!hasWebGL2()) return <Problem title="Ce navigateur ne peut pas afficher la 3D" detail="WebGL 2 indisponible" />
   return (
     <div className="app">
       <div className="viewport">
         <Scene quality={quality} />
       </div>
-      <TopBar />
-      <SidePanel />
-      <SelectionBar />
-      <Hint />
-      <VisitHint />
+      <EditorUI />
       <Loader />
     </div>
   )

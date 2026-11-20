@@ -3,18 +3,29 @@
 // le repère local du mur est : x le long du mur, y vers le haut, z vers l'intérieur de la pièce.
 // Ce système servira aussi pour les appartements tracés depuis un plan (étape 3).
 import { useMemo } from 'react'
-import { RoundedBox } from '@react-three/drei'
+import { Line, RoundedBox } from '@react-three/drei'
+import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import type { OpeningKind } from '../model/types'
 
 export interface WallOpening {
   id: string
-  kind: 'fenetre' | 'porte'
+  kind: OpeningKind
   /** Position du centre le long du mur depuis le début du segment (m) */
   u: number
   width: number
   height: number
   sill: number
+  depth: number
+  hinge: 'gauche' | 'droite'
 }
+
+/** Ouvertures qui découpent le mur jusqu'au sol (encoche dans le contour). */
+const isNotch = (o: WallOpening) => o.kind !== 'placard' && o.sill <= 0.001
+/** Ouvertures percées dans le mur au-dessus du sol (trou). */
+const isHole = (o: WallOpening) => o.kind !== 'placard' && o.sill > 0.001
+/** Ouvertures qui interrompent la plinthe. */
+const cutsBaseboard = (o: WallOpening) => o.kind === 'placard' || o.sill <= 0.001
 
 export interface WallSpec {
   key: string
@@ -53,7 +64,7 @@ function wallGeometry(spec: WallSpec, length: number) {
   const T = spec.thickness
   const H = spec.height
   const ext = spec.extendEnds ? T : 0
-  const doors = spec.openings.filter((o) => o.kind === 'porte').sort((p, q) => p.u - q.u)
+  const doors = spec.openings.filter(isNotch).sort((p, q) => p.u - q.u)
   const shape = new THREE.Shape()
   shape.moveTo(-ext, 0)
   for (const d of doors) {
@@ -68,7 +79,7 @@ function wallGeometry(spec: WallSpec, length: number) {
   shape.lineTo(length + ext, H)
   shape.lineTo(-ext, H)
   shape.closePath()
-  for (const w of spec.openings.filter((o) => o.kind === 'fenetre')) {
+  for (const w of spec.openings.filter(isHole)) {
     const u0 = w.u - w.width / 2
     const u1 = w.u + w.width / 2
     const hole = new THREE.Path()
@@ -103,7 +114,10 @@ function profileGeometry(points: [number, number][], length: number, curve?: { a
 function Baseboards({ spec, length, mat }: { spec: WallSpec; length: number; mat: THREE.Material }) {
   // Plinthe de 9 cm à bord arrondi, interrompue au droit des portes
   const pieces = useMemo(() => {
-    const doors = spec.openings.filter((o) => o.kind === 'porte').map((d) => [d.u - d.width / 2 - 0.07, d.u + d.width / 2 + 0.07]).sort((p, q) => p[0] - q[0])
+    const doors = spec.openings
+      .filter(cutsBaseboard)
+      .map((d) => (d.kind === 'porte' ? [d.u - d.width / 2 - 0.07, d.u + d.width / 2 + 0.07] : [d.u - d.width / 2, d.u + d.width / 2]))
+      .sort((p, q) => p[0] - q[0])
     const spans: [number, number][] = []
     let start = 0
     for (const [d0, d1] of doors) {
@@ -140,6 +154,7 @@ function Bar({ p, s, mat, r = 0.005, shadow = true }: { p: [number, number, numb
 
 /** Fenêtre à deux battants : dormant, ouvrants, vitrage, appui intérieur et crémone. */
 function WindowUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }) {
+  const french = o.kind === 'porte-fenetre'
   const u0 = o.u - o.width / 2
   const v0 = o.sill
   const W = o.width
@@ -166,18 +181,23 @@ function WindowUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }
           <Bar p={[cx - leafW / 2 + cw / 2, yc, z + 0.012]} s={[cw, leafH, cd]} mat={m.frame} />
           <Bar p={[cx + leafW / 2 - cw / 2, yc, z + 0.012]} s={[cw, leafH, cd]} mat={m.frame} />
           <Bar p={[cx, yc + leafH / 2 - cw / 2, z + 0.012]} s={[leafW, cw, cd]} mat={m.frame} />
-          <Bar p={[cx, yc - leafH / 2 + cw * 0.6, z + 0.012]} s={[leafW, cw * 1.2, cd]} mat={m.frame} />
+          {/* Traverse basse, plus haute sur une porte-fenêtre (soubassement) */}
+          <Bar p={[cx, yc - leafH / 2 + (french ? 0.1 : cw * 0.6), z + 0.012]} s={[leafW, french ? 0.2 : cw * 1.2, cd]} mat={m.frame} />
           {/* Vitrage : ne bloque pas la lumière du soleil */}
-          <mesh position={[cx, yc, z + 0.01]} material={m.glass} renderOrder={1}>
-            <planeGeometry args={[leafW - 2 * cw + 0.01, leafH - 2.2 * cw + 0.01]} />
+          <mesh position={[cx, yc + (french ? 0.07 : 0), z + 0.01]} material={m.glass} renderOrder={1}>
+            <planeGeometry args={[leafW - 2 * cw + 0.01, leafH - (french ? 0.26 + cw : 2.2 * cw) + 0.01]} />
           </mesh>
         </group>
       ))}
       {/* Crémone (poignée) */}
-      <Bar p={[o.u + cw * 0.5, yc, z + 0.012 + cd / 2 + 0.008]} s={[0.022, 0.06, 0.014]} mat={m.metal} r={0.004} shadow={false} />
-      <Bar p={[o.u + cw * 0.5, yc - 0.045, z + 0.012 + cd / 2 + 0.03]} s={[0.016, 0.11, 0.016]} mat={m.metal} r={0.007} shadow={false} />
-      {/* Appui intérieur (tablette) */}
-      <Bar p={[o.u, v0 - 0.016, (z + 0.035) / 2]} s={[W + 0.08, 0.032, -z + 0.035]} mat={m.sill} r={0.006} />
+      <Bar p={[o.u + cw * 0.5, french ? 1.05 : yc, z + 0.012 + cd / 2 + 0.008]} s={[0.022, 0.06, 0.014]} mat={m.metal} r={0.004} shadow={false} />
+      <Bar p={[o.u + cw * 0.5, (french ? 1.05 : yc) - 0.045, z + 0.012 + cd / 2 + 0.03]} s={[0.016, 0.11, 0.016]} mat={m.metal} r={0.007} shadow={false} />
+      {/* Appui intérieur (tablette) ou seuil pour une porte-fenêtre */}
+      {french ? (
+        <Bar p={[o.u, 0.008, (z + 0.02) / 2]} s={[W, 0.016, -z + 0.02]} mat={m.sill} r={0.004} />
+      ) : (
+        <Bar p={[o.u, v0 - 0.016, (z + 0.035) / 2]} s={[W + 0.08, 0.032, -z + 0.035]} mat={m.sill} r={0.006} />
+      )}
     </group>
   )
 }
@@ -191,6 +211,9 @@ function DoorUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }) 
   const zl = -T / 2
   const aw = 0.07 // largeur du chambranle
   const faceZ = zl + leafT / 2
+  // Poignée du côté opposé aux charnières (vu depuis la pièce, la droite est vers +x)
+  const hx = o.hinge === 'droite' ? u0 + 0.075 : u0 + W - 0.075
+  const lever = o.hinge === 'droite' ? hx + 0.055 : hx - 0.055
   const panel = (y0: number, y1: number) => {
     const x0 = u0 + 0.12
     const x1 = u0 + W - 0.12
@@ -221,30 +244,129 @@ function DoorUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }) 
       <Bar p={[u0 + W + aw / 2 - 0.01, (H + aw) / 2, 0.008]} s={[aw, H + aw, 0.016]} mat={m.trim} r={0.006} />
       <Bar p={[o.u, H + aw / 2 - 0.01, 0.008]} s={[W + 2 * aw - 0.04, aw, 0.016]} mat={m.trim} r={0.006} />
       {/* Béquille et rosace */}
-      <mesh position={[u0 + W - 0.075, 1.02, faceZ + 0.006]} rotation-x={Math.PI / 2} material={m.metal}>
+      <mesh position={[hx, 1.02, faceZ + 0.006]} rotation-x={Math.PI / 2} material={m.metal}>
         <cylinderGeometry args={[0.026, 0.026, 0.012, 24]} />
       </mesh>
-      <mesh position={[u0 + W - 0.075, 1.02, faceZ + 0.035]} rotation-x={Math.PI / 2} material={m.metal}>
+      <mesh position={[hx, 1.02, faceZ + 0.035]} rotation-x={Math.PI / 2} material={m.metal}>
         <cylinderGeometry args={[0.009, 0.009, 0.05, 16]} />
       </mesh>
-      <mesh position={[u0 + W - 0.13, 1.02, faceZ + 0.058]} rotation-z={Math.PI / 2} material={m.metal}>
+      <mesh position={[lever, 1.02, faceZ + 0.058]} rotation-z={Math.PI / 2} material={m.metal}>
         <capsuleGeometry args={[0.009, 0.1, 6, 12]} />
       </mesh>
     </group>
   )
 }
 
-export function Wall({ spec, m, groupRef }: { spec: WallSpec; m: ArchMaterials; groupRef?: (g: THREE.Group | null) => void }) {
+/** Placard intégré : façade à portes battantes, du sol presque au plafond. */
+function PlacardUnit({ o, m, roomHeight }: { o: WallOpening; m: ArchMaterials; roomHeight: number }) {
+  const W = o.width
+  const D = o.depth
+  const H = Math.min(o.height, roomHeight)
+  const u0 = o.u - W / 2
+  const n = Math.max(1, Math.round(W / 0.6))
+  const leaf = (W - 0.04) / n
+  const plinth = 0.08
+  const doorH = H - plinth - 0.02
+  return (
+    <group>
+      {/* Joues latérales et dessus */}
+      <Bar p={[u0 + 0.01, H / 2, D / 2]} s={[0.02, H, D]} mat={m.trim} r={0.003} />
+      <Bar p={[u0 + W - 0.01, H / 2, D / 2]} s={[0.02, H, D]} mat={m.trim} r={0.003} />
+      {H < roomHeight - 0.02 && <Bar p={[o.u, H - 0.01, D / 2]} s={[W, 0.02, D]} mat={m.trim} r={0.003} />}
+      {H >= roomHeight - 0.02 && <Bar p={[o.u, H - 0.03, D - 0.01]} s={[W, 0.06, 0.02]} mat={m.trim} r={0.003} />}
+      {/* Socle en retrait */}
+      <Bar p={[o.u, plinth / 2, D - 0.05]} s={[W - 0.04, plinth, 0.02]} mat={m.metal} r={0.003} shadow={false} />
+      {Array.from({ length: n }, (_, i) => {
+        const cx = u0 + 0.02 + leaf * (i + 0.5)
+        const handleX = i % 2 === 0 ? cx + leaf / 2 - 0.06 : cx - leaf / 2 + 0.06
+        return (
+          <group key={i}>
+            <Bar p={[cx, plinth + doorH / 2, D - 0.012]} s={[leaf - 0.004, doorH, 0.022]} mat={m.trim} r={0.004} />
+            <Bar p={[handleX, plinth + doorH * 0.5, D + 0.012]} s={[0.014, 0.3, 0.02]} mat={m.metal} r={0.006} shadow={false} />
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
+/** Niche : renfoncement dans l'épaisseur du mur, avec fond et tablette. */
+function NicheUnit({ o, T, m, wallMat }: { o: WallOpening; T: number; m: ArchMaterials; wallMat: THREE.Material }) {
+  const d = Math.min(o.depth, T - 0.02)
+  return (
+    <group>
+      <mesh position={[o.u, o.sill + o.height / 2, -d]} material={wallMat} receiveShadow>
+        <planeGeometry args={[o.width, o.height]} />
+      </mesh>
+      {o.sill > 0.001 && <Bar p={[o.u, o.sill - 0.012, (0.02 - d) / 2]} s={[o.width + 0.04, 0.024, d + 0.02]} mat={m.sill} r={0.004} />}
+    </group>
+  )
+}
+
+/** Contour de sélection (bordeaux) d'une ouverture, côté pièce. */
+function OpeningOutline({ o }: { o: WallOpening }) {
+  const u0 = o.u - o.width / 2
+  const z = o.kind === 'placard' ? o.depth + 0.03 : 0.03
+  const y0 = o.sill
+  const y1 = o.sill + o.height
+  const pts: [number, number, number][] = [
+    [u0, y0, z],
+    [u0 + o.width, y0, z],
+    [u0 + o.width, y1, z],
+    [u0, y1, z],
+    [u0, y0, z],
+  ]
+  return (
+    <group>
+      <Line points={pts} color="#742f45" lineWidth={2.5} toneMapped={false} />
+      <mesh position={[o.u, (y0 + y1) / 2, z - 0.005]}>
+        <planeGeometry args={[o.width, o.height]} />
+        <meshBasicMaterial color="#742f45" transparent opacity={0.12} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
+  )
+}
+
+export interface WallHandlers {
+  onWallClick?: (e: ThreeEvent<MouseEvent>) => void
+  onOpeningDown?: (id: string, e: ThreeEvent<PointerEvent>) => void
+  onOpeningClick?: (id: string, e: ThreeEvent<MouseEvent>) => void
+  selectedWall?: boolean
+  selectedOpening?: string | null
+}
+
+export function Wall({ spec, m, wallMat, groupRef, handlers = {} }: { spec: WallSpec; m: ArchMaterials; wallMat: THREE.Material; groupRef?: (g: THREE.Group | null) => void; handlers?: WallHandlers }) {
   const { length, angle, position } = wallFrame(spec)
   const geo = useMemo(() => wallGeometry(spec, length), [spec, length])
   return (
     <group ref={groupRef} position={position} rotation-y={angle}>
-      <mesh geometry={geo} material={m.wall} receiveShadow castShadow />
+      <mesh geometry={geo} material={wallMat} receiveShadow castShadow onClick={handlers.onWallClick} />
+      {handlers.selectedWall && (
+        <mesh position={[length / 2, spec.height / 2, 0.004]}>
+          <planeGeometry args={[length, spec.height]} />
+          <meshBasicMaterial color="#742f45" transparent opacity={0.1} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
       <Baseboards spec={spec} length={length} mat={m.trim} />
       <Cornice length={length} height={spec.height} mat={m.ceiling} />
-      {spec.openings.map((o) =>
-        o.kind === 'fenetre' ? <WindowUnit key={o.id} o={o} T={spec.thickness} m={m} /> : <DoorUnit key={o.id} o={o} T={spec.thickness} m={m} />,
-      )}
+      {spec.openings.map((o) => (
+        <group
+          key={o.id}
+          onPointerDown={(e) => handlers.onOpeningDown?.(o.id, e)}
+          onClick={(e) => handlers.onOpeningClick?.(o.id, e)}
+        >
+          {o.kind === 'fenetre' || o.kind === 'porte-fenetre' ? (
+            <WindowUnit o={o} T={spec.thickness} m={m} />
+          ) : o.kind === 'porte' ? (
+            <DoorUnit o={o} T={spec.thickness} m={m} />
+          ) : o.kind === 'placard' ? (
+            <PlacardUnit o={o} m={m} roomHeight={spec.height} />
+          ) : (
+            <NicheUnit o={o} T={spec.thickness} m={m} wallMat={wallMat} />
+          )}
+          {handlers.selectedOpening === o.id && <OpeningOutline o={o} />}
+        </group>
+      ))}
     </group>
   )
 }

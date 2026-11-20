@@ -1,202 +1,413 @@
-// État global de l'application (la pièce, les meubles placés, la sélection…).
-// Sauvegardé automatiquement dans le navigateur (localStorage).
+// État global de l'application : écran affiché, projet ouvert, version en cours
+// d'édition, sélection, historique (annuler / rétablir) et enregistrement.
 import { create } from 'zustand'
-import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { CATALOG_BY_ID } from './data/catalog'
-import { FLOORS, WALL_COLORS } from './data/finishes'
+import { clampOffset, clampToRoom, snapPosition } from './model/geometry'
+import { loadInspirations, loadProjects, saveInspirations, saveProjects, deleteImage } from './model/storage'
+import { startLayout, type StartKind } from './model/templates'
+import type { Inspiration, ItemDims, Layout, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ViewMode, WallSide } from './model/types'
+import { uid } from './model/types'
 
-export interface Room {
-  /** Largeur intérieure (axe x), en mètres */
-  width: number
-  /** Longueur intérieure (axe z), en mètres */
-  depth: number
-  /** Hauteur sous plafond, en mètres */
-  height: number
-}
+export type { Layout, Opening, PlacedItem, Room, ViewMode, WallSide } from './model/types'
 
-export interface PlacedItem {
-  uid: string
-  modelId: string
-  x: number
-  z: number
-  /** Rotation autour de l'axe vertical, en radians */
-  rot: number
-}
+export const ROOM_LIMITS = { min: 1.5, max: 12, minHeight: 2.2, maxHeight: 4 }
 
-export type ViewMode = '3d' | 'visite' | 'top'
+export type Screen = 'accueil' | 'assistant' | 'editeur'
 
-export type WallSide = 'nord' | 'sud' | 'est' | 'ouest'
-
-/** Fenêtre ou porte posée sur un mur de la pièce. */
-export interface Opening {
-  id: string
-  kind: 'fenetre' | 'porte'
-  wall: WallSide
-  /** Position du centre le long du mur, depuis le milieu du mur (m) */
-  offset: number
-  width: number
-  height: number
-  /** Hauteur d'allège (bas de la fenêtre) */
-  sill: number
-}
-
-export const DEFAULT_OPENINGS: Opening[] = [
-  { id: 'f1', kind: 'fenetre', wall: 'ouest', offset: 0.2, width: 1.4, height: 1.55, sill: 0.8 },
-  { id: 'f2', kind: 'fenetre', wall: 'nord', offset: 1.25, width: 1.2, height: 1.55, sill: 0.8 },
-  { id: 'p1', kind: 'porte', wall: 'est', offset: 1.15, width: 0.83, height: 2.04, sill: 0 },
-]
-
-export const ROOM_LIMITS = { min: 2, max: 12, minHeight: 2.2, maxHeight: 4 }
+const HISTORY_MAX = 60
 
 interface State {
-  room: Room
-  wallColor: string
-  floorId: string
-  items: PlacedItem[]
-  selectedUid: string | null
+  screen: Screen
+  projects: Project[]
+  inspirations: Inspiration[]
+  projectId: string | null
+  /** Copie de travail de la version ouverte */
+  layout: Layout
+  past: Layout[]
+  future: Layout[]
+  selection: Selection
   view: ViewMode
   dragging: boolean
+  snap: { grid: boolean; walls: boolean }
+  /** Image de référence affichée à côté de la pièce */
+  pinnedImage: string | null
+  /** Moment du dernier enregistrement (pour la confirmation « Enregistré ») */
+  savedAt: number
+  dirty: boolean
+
+  // Navigation et projets
+  goHome: () => void
+  startWizard: () => void
+  createProject: (p: { name: string; roomType: RoomType; start: StartKind; room: Room; references: RefImage[] }) => void
+  openProject: (id: string) => void
+  deleteProject: (id: string) => void
+  renameProject: (name: string) => void
+  addReference: (ref: RefImage) => void
+  removeReference: (id: string) => void
+  save: (thumb?: string) => void
+
+  // Versions
+  duplicateVersion: () => void
+  switchVersion: (id: string) => void
+  renameVersion: (id: string, name: string) => void
+  deleteVersion: (id: string) => void
+
+  // Historique
+  record: (key?: string) => void
+  undo: () => void
+  redo: () => void
+
+  // Pièce
   setRoom: (patch: Partial<Room>) => void
-  setWallColor: (hex: string) => void
+  setWallColor: (side: WallSide, hex: string) => void
+  setAllWallsColor: (hex: string) => void
   setFloor: (id: string) => void
+
+  // Ouvertures
+  addOpening: (kind: OpeningKind, wall: WallSide) => void
+  updateOpening: (id: string, patch: Partial<Opening>, key?: string) => void
+  removeOpening: (id: string) => void
+
+  // Meubles
   addItem: (modelId: string) => void
   moveItem: (uid: string, x: number, z: number) => void
   rotateItem: (uid: string, delta: number) => void
   setRotation: (uid: string, rot: number) => void
+  setItemColor: (uid: string, color: string | null) => void
+  setItemDims: (uid: string, dims: ItemDims | undefined) => void
+  toggleLock: (uid: string) => void
   duplicateItem: (uid: string) => void
   removeItem: (uid: string) => void
-  select: (uid: string | null) => void
+
+  // Interface
+  select: (s: Selection) => void
   setView: (v: ViewMode) => void
   setDragging: (d: boolean) => void
-  resetProject: () => void
+  setSnap: (patch: Partial<State['snap']>) => void
+  pinImage: (id: string | null) => void
+
+  // Inspirations
+  addInspiration: (i: Omit<Inspiration, 'id' | 'createdAt'>) => void
+  updateInspiration: (id: string, patch: Partial<Inspiration>) => void
+  removeInspiration: (id: string) => void
 }
 
-const uid = () => Math.random().toString(36).slice(2, 10)
+const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
+const normAngle = (a: number) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
 
-/** Demi-encombrement au sol d'un meuble après rotation. */
-export function halfExtents(modelId: string, rot: number) {
-  const c = CATALOG_BY_ID[modelId]
-  if (!c) return { hx: 0.25, hz: 0.25 }
-  const cos = Math.abs(Math.cos(rot))
-  const sin = Math.abs(Math.sin(rot))
-  return {
-    hx: (cos * c.width + sin * c.depth) / 2,
-    hz: (sin * c.width + cos * c.depth) / 2,
+let lastRecord = { key: '', time: 0 }
+let autosaveTimer: ReturnType<typeof setTimeout> | undefined
+
+const initialProjects = loadProjects()
+
+export const useStore = create<State>()((set, get) => {
+  /** Modifie la version en cours après avoir mémorisé l'état précédent (pour « Annuler »). */
+  const edit = (key: string, fn: (l: Layout) => void) => {
+    get().record(key)
+    const l = clone(get().layout)
+    fn(l)
+    l.updatedAt = Date.now()
+    set({ layout: l, dirty: true })
+    clearTimeout(autosaveTimer)
+    autosaveTimer = setTimeout(() => get().save(), 1500)
   }
-}
 
-/** Garde un meuble à l'intérieur de la pièce. */
-export function clampToRoom(item: Pick<PlacedItem, 'modelId' | 'x' | 'z' | 'rot'>, room: Room) {
-  const { hx, hz } = halfExtents(item.modelId, item.rot)
-  const limX = Math.max(0, room.width / 2 - hx)
-  const limZ = Math.max(0, room.depth / 2 - hz)
-  return {
-    x: Math.min(limX, Math.max(-limX, item.x)),
-    z: Math.min(limZ, Math.max(-limZ, item.z)),
+  const persistProject = (mutate: (p: Project) => void) => {
+    const { projectId } = get()
+    const projects = get().projects.map((p) => {
+      if (p.id !== projectId) return p
+      const copy = clone(p)
+      mutate(copy)
+      copy.updatedAt = Date.now()
+      return copy
+    })
+    saveProjects(projects)
+    set({ projects })
   }
-}
 
-const normAngle = (a: number) => {
-  const t = Math.PI * 2
-  return ((a % t) + t) % t
-}
+  return {
+    screen: initialProjects.length ? 'accueil' : 'accueil',
+    projects: initialProjects,
+    inspirations: loadInspirations(),
+    projectId: null,
+    layout: startLayout('exemple', 'chambre', { width: 3.6, depth: 4, height: 2.5 }),
+    past: [],
+    future: [],
+    selection: null,
+    view: 'plan',
+    dragging: false,
+    snap: { grid: false, walls: true },
+    pinnedImage: null,
+    savedAt: 0,
+    dirty: false,
 
-const DEFAULT_ROOM: Room = { width: 5, depth: 4.2, height: 2.6 }
-
-const defaultItems = (): PlacedItem[] => [
-  { uid: uid(), modelId: 'rug_wool', x: -0.55, z: 0.45, rot: 0 },
-  { uid: uid(), modelId: 'sofa_lin', x: -0.55, z: 1.55, rot: Math.PI },
-  { uid: uid(), modelId: 'modern_coffee_table_01', x: -0.55, z: 0.4, rot: 0 },
-  { uid: uid(), modelId: 'mid_century_lounge_chair', x: -1.85, z: -0.55, rot: Math.PI / 2 - 0.45 },
-  { uid: uid(), modelId: 'modern_wooden_cabinet', x: -0.9, z: -1.83, rot: 0 },
-  { uid: uid(), modelId: 'potted_plant_02', x: -2.1, z: 1.72, rot: 0.6 },
-  { uid: uid(), modelId: 'wooden_display_shelves_01', x: 2.3, z: -0.55, rot: -Math.PI / 2 },
-  { uid: uid(), modelId: 'wooden_table_02', x: 1.15, z: -0.75, rot: 0 },
-  { uid: uid(), modelId: 'dining_chair_02', x: 1.15, z: -1.32, rot: 0 },
-  { uid: uid(), modelId: 'dining_chair_02', x: 1.15, z: -0.18, rot: Math.PI },
-]
-
-/** Accès au stockage du navigateur protégé (navigation privée, stockage bloqué…). */
-const safeStorage: StateStorage = {
-  getItem: (k) => {
-    try { return localStorage.getItem(k) } catch { return null }
-  },
-  setItem: (k, v) => {
-    try { localStorage.setItem(k, v) } catch { /* stockage indisponible */ }
-  },
-  removeItem: (k) => {
-    try { localStorage.removeItem(k) } catch { /* stockage indisponible */ }
-  },
-}
-
-export const useStore = create<State>()(
-  persist(
-    (set, get) => ({
-      room: DEFAULT_ROOM,
-      wallColor: WALL_COLORS[0].hex,
-      floorId: FLOORS[0].id,
-      items: defaultItems(),
-      selectedUid: null,
-      view: '3d',
-      dragging: false,
-
-      setRoom: (patch) =>
-        set((s) => {
-          const room = { ...s.room, ...patch }
-          room.width = Math.min(ROOM_LIMITS.max, Math.max(ROOM_LIMITS.min, room.width))
-          room.depth = Math.min(ROOM_LIMITS.max, Math.max(ROOM_LIMITS.min, room.depth))
-          room.height = Math.min(ROOM_LIMITS.maxHeight, Math.max(ROOM_LIMITS.minHeight, room.height))
-          // Les meubles restent dans la pièce quand elle rétrécit
-          const items = s.items.map((it) => ({ ...it, ...clampToRoom(it, room) }))
-          return { room, items }
-        }),
-      setWallColor: (wallColor) => set({ wallColor }),
-      setFloor: (floorId) => set({ floorId }),
-
-      addItem: (modelId) => {
-        const { room, items } = get()
-        // Petit décalage pour ne pas empiler exactement les meubles ajoutés
-        const n = items.length % 5
-        const base = { modelId, x: (n - 2) * 0.15, z: (n - 2) * 0.15, rot: 0 }
-        const item: PlacedItem = { uid: uid(), ...base, ...clampToRoom(base, room) }
-        set({ items: [...items, item], selectedUid: item.uid })
-      },
-      moveItem: (id, x, z) =>
-        set((s) => ({
-          items: s.items.map((it) => (it.uid === id ? { ...it, ...clampToRoom({ ...it, x, z }, s.room) } : it)),
-        })),
-      rotateItem: (id, delta) => {
-        const it = get().items.find((i) => i.uid === id)
-        if (it) get().setRotation(id, it.rot + delta)
-      },
-      setRotation: (id, rot) =>
-        set((s) => ({
-          items: s.items.map((it) => {
-            if (it.uid !== id) return it
-            const next = { ...it, rot: normAngle(rot) }
-            return { ...next, ...clampToRoom(next, s.room) }
-          }),
-        })),
-      duplicateItem: (id) => {
-        const { items, room } = get()
-        const it = items.find((i) => i.uid === id)
-        if (!it) return
-        const base = { ...it, x: it.x + 0.3, z: it.z + 0.3 }
-        const copy: PlacedItem = { ...base, uid: uid(), ...clampToRoom(base, room) }
-        set({ items: [...items, copy], selectedUid: copy.uid })
-      },
-      removeItem: (id) =>
-        set((s) => ({ items: s.items.filter((i) => i.uid !== id), selectedUid: s.selectedUid === id ? null : s.selectedUid })),
-      select: (selectedUid) => set({ selectedUid }),
-      setView: (view) => set({ view }),
-      setDragging: (dragging) => set({ dragging }),
-      resetProject: () =>
-        set({ room: DEFAULT_ROOM, wallColor: WALL_COLORS[0].hex, floorId: FLOORS[0].id, items: defaultItems(), selectedUid: null }),
-    }),
-    {
-      name: 'interieur3d-projet-v2',
-      storage: createJSONStorage(() => safeStorage),
-      partialize: (s) => ({ room: s.room, wallColor: s.wallColor, floorId: s.floorId, items: s.items, view: s.view }),
+    goHome: () => {
+      if (get().projectId && get().dirty) get().save()
+      set({ screen: 'accueil', selection: null, pinnedImage: null })
     },
-  ),
-)
+    startWizard: () => set({ screen: 'assistant' }),
+
+    createProject: ({ name, roomType, start, room, references }) => {
+      const layout = startLayout(start, roomType, room)
+      const project: Project = {
+        id: uid(),
+        name: name.trim() || 'Mon espace',
+        roomType,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        versions: [layout],
+        activeVersionId: layout.id,
+        references,
+      }
+      const projects = [project, ...get().projects]
+      saveProjects(projects)
+      set({ projects, projectId: project.id, layout: clone(layout), past: [], future: [], selection: null, screen: 'editeur', view: 'plan', dirty: false, savedAt: 0 })
+    },
+
+    openProject: (id) => {
+      const p = get().projects.find((x) => x.id === id)
+      if (!p) return
+      const v = p.versions.find((x) => x.id === p.activeVersionId) ?? p.versions[0]
+      set({ projectId: id, layout: clone(v), past: [], future: [], selection: null, screen: 'editeur', dirty: false, savedAt: 0 })
+    },
+
+    deleteProject: (id) => {
+      const p = get().projects.find((x) => x.id === id)
+      p?.references.forEach((r) => deleteImage(r.id))
+      const projects = get().projects.filter((x) => x.id !== id)
+      saveProjects(projects)
+      set({ projects })
+    },
+
+    renameProject: (name) => persistProject((p) => (p.name = name.trim() || p.name)),
+
+    addReference: (ref) => persistProject((p) => p.references.push(ref)),
+    removeReference: (id) => {
+      deleteImage(id)
+      persistProject((p) => (p.references = p.references.filter((r) => r.id !== id)))
+      if (get().pinnedImage === id) set({ pinnedImage: null })
+    },
+
+    save: (thumb) => {
+      clearTimeout(autosaveTimer)
+      const layout = clone(get().layout)
+      if (thumb) layout.thumb = thumb
+      persistProject((p) => {
+        p.versions = p.versions.map((v) => (v.id === layout.id ? layout : v))
+        p.activeVersionId = layout.id
+      })
+      set({ savedAt: Date.now(), dirty: false, layout: thumb ? { ...get().layout, thumb } : get().layout })
+    },
+
+    duplicateVersion: () => {
+      get().save()
+      const p = get().projects.find((x) => x.id === get().projectId)
+      if (!p) return
+      const copy = clone(get().layout)
+      copy.id = uid()
+      copy.name = `Version ${p.versions.length + 1}`
+      copy.updatedAt = Date.now()
+      persistProject((pp) => {
+        pp.versions.push(copy)
+        pp.activeVersionId = copy.id
+      })
+      set({ layout: copy, past: [], future: [], selection: null, savedAt: Date.now(), dirty: false })
+    },
+
+    switchVersion: (id) => {
+      if (id === get().layout.id) return
+      get().save()
+      const p = get().projects.find((x) => x.id === get().projectId)
+      const v = p?.versions.find((x) => x.id === id)
+      if (!v) return
+      persistProject((pp) => (pp.activeVersionId = id))
+      set({ layout: clone(v), past: [], future: [], selection: null, dirty: false })
+    },
+
+    renameVersion: (id, name) => {
+      if (id === get().layout.id) set({ layout: { ...get().layout, name } })
+      persistProject((p) => p.versions.forEach((v) => v.id === id && (v.name = name.trim() || v.name)))
+    },
+
+    deleteVersion: (id) => {
+      const p = get().projects.find((x) => x.id === get().projectId)
+      if (!p || p.versions.length < 2) return
+      const remaining = p.versions.filter((v) => v.id !== id)
+      persistProject((pp) => {
+        pp.versions = pp.versions.filter((v) => v.id !== id)
+        if (pp.activeVersionId === id) pp.activeVersionId = remaining[0].id
+      })
+      if (get().layout.id === id) set({ layout: clone(remaining[0]), past: [], future: [], selection: null })
+    },
+
+    record: (key = '') => {
+      const now = performance.now()
+      // Une série de petits changements rapprochés (glisser, curseur) = un seul pas d'historique
+      if (key && key === lastRecord.key && now - lastRecord.time < 900) {
+        lastRecord.time = now
+        return
+      }
+      lastRecord = { key, time: now }
+      const past = [...get().past, clone(get().layout)].slice(-HISTORY_MAX)
+      set({ past, future: [] })
+    },
+    undo: () => {
+      const { past, future, layout } = get()
+      if (!past.length) return
+      lastRecord = { key: '', time: 0 }
+      set({ layout: past[past.length - 1], past: past.slice(0, -1), future: [clone(layout), ...future], selection: null, dirty: true })
+      clearTimeout(autosaveTimer)
+      autosaveTimer = setTimeout(() => get().save(), 1500)
+    },
+    redo: () => {
+      const { past, future, layout } = get()
+      if (!future.length) return
+      lastRecord = { key: '', time: 0 }
+      set({ layout: future[0], future: future.slice(1), past: [...past, clone(layout)], selection: null, dirty: true })
+      clearTimeout(autosaveTimer)
+      autosaveTimer = setTimeout(() => get().save(), 1500)
+    },
+
+    setRoom: (patch) =>
+      edit('room', (l) => {
+        const r = { ...l.room, ...patch }
+        r.width = Math.min(ROOM_LIMITS.max, Math.max(ROOM_LIMITS.min, r.width))
+        r.depth = Math.min(ROOM_LIMITS.max, Math.max(ROOM_LIMITS.min, r.depth))
+        r.height = Math.min(ROOM_LIMITS.maxHeight, Math.max(ROOM_LIMITS.minHeight, r.height))
+        l.room = r
+        l.items = l.items.map((it) => ({ ...it, ...clampToRoom(it, r) }))
+        l.openings = l.openings.map((o) => {
+          const width = Math.min(o.width, (o.wall === 'nord' || o.wall === 'sud' ? r.width : r.depth) - 0.2)
+          return { ...o, width, height: Math.min(o.height, r.height - o.sill - 0.05), offset: clampOffset(r, { ...o, width }, o.offset) }
+        })
+      }),
+    setWallColor: (side, hex) => edit(`mur-${side}`, (l) => (l.wallColors[side] = hex)),
+    setAllWallsColor: (hex) => edit('murs', (l) => (Object.keys(l.wallColors) as WallSide[]).forEach((s) => (l.wallColors[s] = hex))),
+    setFloor: (id) => edit('sol', (l) => (l.floorId = id)),
+
+    addOpening: (kind, wall) => {
+      const defaults: Record<OpeningKind, Omit<Opening, 'id' | 'wall' | 'offset' | 'kind'>> = {
+        fenetre: { width: 1.2, height: 1.35, sill: 0.9 },
+        'porte-fenetre': { width: 1.4, height: 2.15, sill: 0, swing: 'interieur' },
+        porte: { width: 0.83, height: 2.04, sill: 0, hinge: 'droite', swing: 'interieur' },
+        placard: { width: 1.2, height: 2.3, sill: 0, depth: 0.6 },
+        niche: { width: 0.8, height: 0.9, sill: 0.9, depth: 0.1 },
+      }
+      const id = uid()
+      edit('ouverture-ajout', (l) => {
+        const d = defaults[kind]
+        const len = wall === 'nord' || wall === 'sud' ? l.room.width : l.room.depth
+        const width = Math.min(d.width, len - 0.3)
+        const height = Math.min(d.height, l.room.height - d.sill - 0.1)
+        // Cherche une place libre le long du mur
+        const others = l.openings.filter((o) => o.wall === wall)
+        let offset = 0
+        for (const cand of [0, -len / 4, len / 4, -len / 3, len / 3]) {
+          if (others.every((o) => Math.abs(o.offset - cand) > (o.width + width) / 2 + 0.05)) {
+            offset = cand
+            break
+          }
+        }
+        l.openings.push({ id, kind, wall, ...d, width, height, offset: clampOffset(l.room, { wall, width }, offset) })
+      })
+      set({ selection: { type: 'opening', id } })
+    },
+    updateOpening: (id, patch, key) =>
+      edit(key ?? `ouverture-${id}`, (l) => {
+        l.openings = l.openings.map((o) => {
+          if (o.id !== id) return o
+          const n = { ...o, ...patch }
+          const len = n.wall === 'nord' || n.wall === 'sud' ? l.room.width : l.room.depth
+          n.width = Math.max(0.3, Math.min(n.width, len - 0.1))
+          n.sill = Math.max(0, Math.min(n.sill, l.room.height - 0.3))
+          n.height = Math.max(0.3, Math.min(n.height, l.room.height - n.sill - (n.kind === 'placard' ? 0 : 0.05)))
+          n.offset = clampOffset(l.room, n, n.offset)
+          return n
+        })
+      }),
+    removeOpening: (id) => {
+      edit('ouverture-suppr', (l) => (l.openings = l.openings.filter((o) => o.id !== id)))
+      set({ selection: null })
+    },
+
+    addItem: (modelId) => {
+      const { layout } = get()
+      const n = layout.items.length % 5
+      const base = { modelId, x: (n - 2) * 0.15, z: (n - 2) * 0.15, rot: 0 }
+      const it: PlacedItem = { uid: uid(), ...base, ...clampToRoom(base, layout.room) }
+      edit('ajout', (l) => l.items.push(it))
+      set({ selection: { type: 'item', id: it.uid } })
+    },
+    moveItem: (id, x, z) =>
+      edit(`deplacer-${id}`, (l) => {
+        l.items = l.items.map((it) => {
+          if (it.uid !== id || it.locked) return it
+          const s = snapPosition(it, x, z, l.room, get().snap)
+          return { ...it, ...clampToRoom({ ...it, ...s }, l.room) }
+        })
+      }),
+    rotateItem: (id, delta) => {
+      const it = get().layout.items.find((i) => i.uid === id)
+      if (it) get().setRotation(id, it.rot + delta)
+    },
+    setRotation: (id, rot) =>
+      edit(`tourner-${id}`, (l) => {
+        l.items = l.items.map((it) => {
+          if (it.uid !== id || it.locked) return it
+          const n = { ...it, rot: normAngle(rot) }
+          return { ...n, ...clampToRoom(n, l.room) }
+        })
+      }),
+    setItemColor: (id, color) => edit(`couleur-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.color = color))),
+    setItemDims: (id, dims) =>
+      edit(`dims-${id}`, (l) => {
+        l.items = l.items.map((it) => {
+          if (it.uid !== id) return it
+          const n = { ...it, dims: dims && { width: Math.max(0.1, dims.width), depth: Math.max(0.05, dims.depth), height: Math.max(0.01, dims.height) } }
+          return { ...n, ...clampToRoom(n, l.room) }
+        })
+      }),
+    toggleLock: (id) => edit(`verrou-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.locked = !it.locked))),
+    duplicateItem: (id) => {
+      const it = get().layout.items.find((i) => i.uid === id)
+      if (!it) return
+      const base = { ...clone(it), x: it.x + 0.3, z: it.z + 0.3, locked: false }
+      const copy: PlacedItem = { ...base, uid: uid(), ...clampToRoom(base, get().layout.room) }
+      edit('dupliquer', (l) => l.items.push(copy))
+      set({ selection: { type: 'item', id: copy.uid } })
+    },
+    removeItem: (id) => {
+      edit('supprimer', (l) => (l.items = l.items.filter((i) => i.uid !== id)))
+      set({ selection: null })
+    },
+
+    select: (selection) => set({ selection }),
+    setView: (view) => set({ view }),
+    setDragging: (dragging) => set({ dragging }),
+    setSnap: (patch) => set({ snap: { ...get().snap, ...patch } }),
+    pinImage: (pinnedImage) => set({ pinnedImage }),
+
+    addInspiration: (i) => {
+      const inspirations = [{ ...i, id: uid(), createdAt: Date.now() }, ...get().inspirations]
+      saveInspirations(inspirations)
+      set({ inspirations })
+    },
+    updateInspiration: (id, patch) => {
+      const inspirations = get().inspirations.map((i) => (i.id === id ? { ...i, ...patch } : i))
+      saveInspirations(inspirations)
+      set({ inspirations })
+    },
+    removeInspiration: (id) => {
+      const insp = get().inspirations.find((i) => i.id === id)
+      if (insp?.imageId) deleteImage(insp.imageId)
+      const inspirations = get().inspirations.filter((i) => i.id !== id)
+      saveInspirations(inspirations)
+      set({ inspirations, pinnedImage: get().pinnedImage === insp?.imageId ? null : get().pinnedImage })
+    },
+  }
+})
+
+/** Projet ouvert. */
+export const useProject = () => useStore((s) => s.projects.find((p) => p.id === s.projectId) ?? null)
+
+export const catalogOf = (it: PlacedItem) => CATALOG_BY_ID[it.modelId]
