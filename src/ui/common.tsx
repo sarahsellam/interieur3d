@@ -60,6 +60,8 @@ export const Icon = {
   wall: svg(<path d="M3 6h18v12H3zM3 12h18M9 6v6M15 12v6" />),
   alert: svg(<path d="M12 4l9 16H3zM12 10v4M12 17v.5" />),
   grid: svg(<path d="M4 4h16v16H4zM4 10h16M4 15h16M10 4v16M15 4v16" />),
+  swap: svg(<path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />),
+  euro: svg(<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5M4 10.5h9M4 13.5h9" />),
   magnet: svg(<path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4zM6 8h4M14 8h4" />),
 }
 

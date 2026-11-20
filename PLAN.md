@@ -21,7 +21,7 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
   ombres douces, occlusion ambiante, visite à hauteur d'yeux, plan d'architecte.
 - Hébergement gratuit sur GitHub Pages, mis à jour automatiquement.
 
-## Étape 3 — Ma chambre sur iPad ⏳ EN COURS (priorité de livraison)
+## Étape 3 — Ma chambre sur iPad ✅ livrée
 
 ### Design et couleurs
 - Ambiance magazine de décoration, beige et naturelle.
@@ -64,12 +64,33 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
   galerie ou lien Pinterest, avec une note (« le mur vert », « le bois de la
   commode »). Une photo de référence peut rester visible à côté de la pièce.
 
+## Étape 3 bis — Mes meubles et budget ⏳ EN COURS
+- Accueil sur fond beige clair chaleureux #F2EBE1, cartes blanches ou ivoire.
+- « Mes meubles » : ajouter un meuble trouvé sur Internet avec « Ajouter depuis un lien »
+  (photo, nom, prix, dimensions, vendeur, lien), à vérifier et compléter à la main,
+  photo depuis la galerie. Sans modèle 3D exact : représentation simplifiée aux bonnes
+  dimensions, clairement signalée.
+- « Remplacer » sur chaque meuble : propositions adaptées aux dimensions disponibles,
+  filtre de budget par meuble (« Moins de 50 € », « 50 à 100 € », « 100 à 300 € »,
+  « Plus de 300 € » ou fourchette personnalisée), fiche avec photo, prix, dimensions,
+  vendeur et lien ; aperçu dans la pièce avant de confirmer ; alerte si ça ne rentre pas.
+- Meubles « Déjà possédé » ou « À acheter » ; budget total des seuls achats prévus,
+  mis à jour à chaque remplacement.
+- Inspirations sans IA : couleurs principales de la photo à appliquer aux murs ou aux
+  meubles, suggestions de meubles à partir de la note.
+- Plus tard (nécessite le relais et l'IA) : récupération automatique des informations
+  d'un lien, propositions classées selon l'ambiance des inspirations, produits de vraies
+  boutiques (catalogue partenaire / affiliation).
+
 ## Étape 4 — Assistant IA « Demander une idée »
 - Demande en langage courant (« Crée un coin bureau en gardant mon lit et en laissant
   l'accès à la porte-fenêtre »).
 - Deux propositions à prévisualiser, en respectant les meubles verrouillés, les
   dimensions et les passages.
 - Appliquer la proposition choisie, puis comparer avec la version précédente.
+- Toucher chaque meuble proposé et choisir « Remplacer » (propositions selon l'ambiance).
+- Pré-requis : compte Anthropic (paiement à l'usage, plafond fixé) et petit relais gratuit
+  (Cloudflare) qui cache la clé et permet de lire les pages produits.
 
 ## Étape 5 — Partage et fil d'inspiration
 - Projets privés par défaut.

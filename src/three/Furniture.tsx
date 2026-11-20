@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { useGLTF, Html } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { CATALOG_BY_ID, assetUrl } from '../data/catalog'
+import { getItem, assetUrl } from '../data/catalog'
 import { useStore, type PlacedItem } from '../store'
 import { itemDims, overlapsOf } from '../model/geometry'
 import type { ItemDims } from '../model/types'
@@ -12,7 +12,7 @@ import { ProceduralModel } from './procedural'
 
 /** Charge un modèle, le centre et pose sa base au sol. */
 export function useNormalizedModel(modelId: string) {
-  const c = CATALOG_BY_ID[modelId]
+  const c = getItem(modelId)!
   const { scene } = useGLTF(assetUrl(c.file), false, false)
   return useMemo(() => {
     const root = scene.clone(true)
@@ -75,7 +75,7 @@ function SelectionOutline({ width, depth, color = '#742f45' }: { width: number; 
 
 /** Modèle 3D importé : mis à l'échelle des dimensions choisies et teinté si besoin. */
 function ModelPrimitive({ modelId, dims, color, onPointerDown }: { modelId: string; dims: ItemDims; color?: string | null; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
-  const c = CATALOG_BY_ID[modelId]
+  const c = getItem(modelId)!
   const { object } = useNormalizedModel(modelId)
   // Matériaux propres à cet exemplaire, pour pouvoir le teinter sans toucher aux autres
   const originals = useMemo(() => {
@@ -104,7 +104,7 @@ function ModelPrimitive({ modelId, dims, color, onPointerDown }: { modelId: stri
 }
 
 export function FurnitureShape({ modelId, dims, color, onPointerDown }: { modelId: string; dims?: ItemDims; color?: string | null; onPointerDown?: (e: ThreeEvent<PointerEvent>) => void }) {
-  const c = CATALOG_BY_ID[modelId]
+  const c = getItem(modelId)!
   const handler = onPointerDown ?? (() => {})
   const d = dims ?? { width: c.width, depth: c.depth, height: c.height }
   if (c.procedural) {
@@ -118,7 +118,7 @@ export function FurnitureShape({ modelId, dims, color, onPointerDown }: { modelI
 }
 
 export function Furniture({ item }: { item: PlacedItem }) {
-  const c = CATALOG_BY_ID[item.modelId]
+  const c = getItem(item.modelId)!
   const dims = itemDims(item)
   const selected = useStore((s) => s.selection?.type === 'item' && s.selection.id === item.uid)
   const overlapping = useStore((s) => overlapsOf(s.layout).some((o) => o.a.id === item.uid || o.b.id === item.uid))

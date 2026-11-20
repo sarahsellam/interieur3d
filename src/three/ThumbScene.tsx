@@ -3,7 +3,7 @@ import { Suspense, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { AmbientEnvironment } from './AmbientEnvironment'
-import { CATALOG_BY_ID } from '../data/catalog'
+import { getItem } from '../data/catalog'
 import { FurnitureShape, useNormalizedModel } from './Furniture'
 
 function Framing({ size }: { size: THREE.Vector3 }) {
@@ -31,7 +31,7 @@ function GltfModel({ id }: { id: string }) {
 }
 
 function Model({ id }: { id: string }) {
-  const c = CATALOG_BY_ID[id]
+  const c = getItem(id)!
   if (c.procedural) {
     return (
       <>
@@ -44,7 +44,7 @@ function Model({ id }: { id: string }) {
 }
 
 export function ThumbScene({ id }: { id: string }) {
-  if (!CATALOG_BY_ID[id]) return null
+  if (!getItem(id)) return null
   return (
     <Canvas gl={{ preserveDrawingBuffer: true, alpha: true }} camera={{ fov: 30 }} style={{ width: 512, height: 512 }}>
       <ambientLight intensity={0.3} />

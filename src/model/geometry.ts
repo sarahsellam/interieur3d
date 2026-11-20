@@ -1,10 +1,10 @@
 // Calculs géométriques au sol : encombrement des meubles, alignements, chevauchements.
-import { CATALOG_BY_ID } from '../data/catalog'
+import { getItem } from '../data/catalog'
 import type { ItemDims, Layout, Opening, PlacedItem, Room, WallSide } from './types'
 import { OPENING_LABEL } from './types'
 
 export function itemDims(item: Pick<PlacedItem, 'modelId' | 'dims'>): ItemDims {
-  const c = CATALOG_BY_ID[item.modelId]
+  const c = getItem(item.modelId)
   if (item.dims) return item.dims
   if (!c) return { width: 0.5, depth: 0.5, height: 0.5 }
   return { width: c.width, depth: c.depth, height: c.height }
@@ -139,7 +139,7 @@ function rectsOverlap(a: Rect, b: Rect, tolerance = 0.015) {
 
 function itemRect(it: PlacedItem): Rect {
   const d = itemDims(it)
-  return { label: CATALOG_BY_ID[it.modelId]?.name ?? 'Meuble', id: it.uid, kind: 'item', cx: it.x, cz: it.z, hw: d.width / 2, hd: d.depth / 2, rot: it.rot }
+  return { label: getItem(it.modelId)?.name ?? 'Meuble', id: it.uid, kind: 'item', cx: it.x, cz: it.z, hw: d.width / 2, hd: d.depth / 2, rot: it.rot }
 }
 
 /** Zones occupées par les placards et le débattement des portes. */
@@ -168,13 +168,13 @@ export interface Overlap {
 
 /** Liste les chevauchements gênants (le tapis et les chaises rangées sous une table sont permis). */
 export function findOverlaps(layout: Layout): Overlap[] {
-  const items = layout.items.filter((it) => !CATALOG_BY_ID[it.modelId]?.floorLayer)
+  const items = layout.items.filter((it) => !getItem(it.modelId)?.floorLayer)
   const out: Overlap[] = []
   const rects = items.map(itemRect)
   for (let i = 0; i < items.length; i++) {
-    const ci = CATALOG_BY_ID[items[i].modelId]
+    const ci = getItem(items[i].modelId)
     for (let j = i + 1; j < items.length; j++) {
-      const cj = CATALOG_BY_ID[items[j].modelId]
+      const cj = getItem(items[j].modelId)
       if ((ci?.tucksUnder && cj?.hostsUnder) || (cj?.tucksUnder && ci?.hostsUnder)) continue
       if (rectsOverlap(rects[i], rects[j])) out.push({ a: rects[i], b: rects[j] })
     }
@@ -194,4 +194,56 @@ export function overlapsOf(layout: Layout): Overlap[] {
     overlapCache.set(layout, r)
   }
   return r
+}
+
+// ---------- Remplacement et budget ----------
+
+export interface FitResult {
+  fits: boolean
+  /** Message court affiché sur la proposition */
+  message: string
+}
+
+/** Vérifie si un autre meuble peut prendre la place d'un meuble existant. */
+export function replacementFit(layout: Layout, uid: string, modelId: string): FitResult {
+  const old = layout.items.find((i) => i.uid === uid)
+  const c = getItem(modelId)
+  if (!old || !c) return { fits: false, message: 'Meuble introuvable' }
+  const candidate = { ...old, modelId, dims: undefined }
+  const { hx, hz } = halfExtents(candidate)
+  const overW = 2 * hx - layout.room.width
+  const overD = 2 * hz - layout.room.depth
+  if (overW > 0.001 || overD > 0.001) {
+    return { fits: false, message: `Trop grand pour la pièce (${Math.round(Math.max(overW, overD) * 100)} cm de trop)` }
+  }
+  const placed = { ...candidate, ...clampToRoom(candidate, layout.room) }
+  const test: Layout = { ...layout, items: layout.items.map((it) => (it.uid === uid ? placed : it)) }
+  const hits = findOverlaps(test).filter((o) => o.a.id === uid || o.b.id === uid)
+  if (hits.length) {
+    const other = hits[0].a.id === uid ? hits[0].b : hits[0].a
+    return { fits: false, message: `Manque de place : touche ${other.label.toLowerCase()}` }
+  }
+  const shift = Math.hypot(placed.x - old.x, placed.z - old.z)
+  return { fits: true, message: shift > 0.01 ? `Rentre (décalé de ${Math.round(shift * 100)} cm)` : 'Rentre à cette place' }
+}
+
+export interface Budget {
+  total: number
+  toBuy: PlacedItem[]
+  owned: PlacedItem[]
+  /** Achats prévus dont le prix n'est pas renseigné */
+  missing: number
+}
+
+export function budgetOf(layout: Layout, priceOf: (it: PlacedItem) => number | null): Budget {
+  const toBuy = layout.items.filter((it) => it.status === 'a-acheter')
+  const owned = layout.items.filter((it) => it.status !== 'a-acheter')
+  let total = 0
+  let missing = 0
+  for (const it of toBuy) {
+    const p = priceOf(it)
+    if (p === null) missing++
+    else total += p
+  }
+  return { total, toBuy, owned, missing }
 }

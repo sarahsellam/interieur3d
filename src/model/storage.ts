@@ -3,10 +3,11 @@
 // - Les images (plans, photos, inspirations) : IndexedDB, plus adapté aux fichiers lourds.
 // Rien ne quitte l'appareil : les projets sont privés.
 import { get, set, del } from 'idb-keyval'
-import type { Inspiration, Project } from './types'
+import type { Inspiration, MyFurniture, Project } from './types'
 
 const PROJECTS_KEY = 'mi3d-projets-v1'
 const INSPI_KEY = 'mi3d-inspirations-v1'
+const FURNITURE_KEY = 'mi3d-mes-meubles-v1'
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -30,6 +31,8 @@ export const loadProjects = () => readJSON<Project[]>(PROJECTS_KEY, [])
 export const saveProjects = (p: Project[]) => writeJSON(PROJECTS_KEY, p)
 export const loadInspirations = () => readJSON<Inspiration[]>(INSPI_KEY, [])
 export const saveInspirations = (i: Inspiration[]) => writeJSON(INSPI_KEY, i)
+export const loadMyFurniture = () => readJSON<MyFurniture[]>(FURNITURE_KEY, [])
+export const saveMyFurniture = (f: MyFurniture[]) => writeJSON(FURNITURE_KEY, f)
 
 // ---------- Images ----------
 

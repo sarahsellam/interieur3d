@@ -72,6 +72,33 @@ export interface PlacedItem {
   dims?: ItemDims
   /** Verrouillé : ne peut plus être déplacé par erreur */
   locked?: boolean
+  /** Déjà possédé ou à acheter (absent : déjà possédé) */
+  status?: ItemStatus
+  /** Prix saisi pour cet exemplaire (sinon celui de la fiche « Mes meubles ») */
+  price?: number | null
+}
+
+export type ItemStatus = 'possede' | 'a-acheter'
+
+/** Meuble ajouté par l'utilisateur (trouvé sur Internet ou déjà chez soi). */
+export interface MyFurniture {
+  id: string
+  name: string
+  category: 'lit' | 'assise' | 'table' | 'rangement' | 'deco'
+  width: number
+  depth: number
+  height: number
+  price?: number | null
+  vendor?: string
+  link?: string
+  /** Photo enregistrée dans l'appareil */
+  imageId?: string
+  /** Photo distante (adresse trouvée sur la page du produit) */
+  imageUrl?: string
+  color: string
+  /** Déjà possédé : placé comme « Déjà possédé » plutôt que « À acheter » */
+  owned?: boolean
+  createdAt: number
 }
 
 /** Une version d'aménagement : la pièce et tout ce qu'elle contient. */
@@ -123,6 +150,8 @@ export interface Inspiration {
   link?: string
   note: string
   createdAt: number
+  /** Couleurs principales de la photo (calculées une fois) */
+  palette?: string[]
 }
 
 export type ViewMode = 'plan' | '3d' | 'yeux'

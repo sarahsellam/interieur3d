@@ -21,6 +21,17 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 - **Versions** : dupliquer un aménagement pour comparer deux idées (avec vignettes).
 - **Références** : plan importé (image ou PDF) et photos de la pièce ; inspirations (photo de
   la galerie ou lien Pinterest + note). Une image peut rester visible à côté de la pièce.
+- **Mes meubles** : « Ajouter depuis un lien » (le nom, le vendeur et parfois les dimensions
+  sont déduits de l'adresse ; la lecture complète de la page viendra avec le relais de l'étape IA),
+  formulaire à vérifier (photo de la galerie, prix, dimensions, vendeur, lien). Sans modèle 3D
+  exact, le meuble apparaît sous une forme simplifiée à ses vraies dimensions (signalée « 3D simplifiée »).
+- **Remplacer** un meuble : propositions du même type qui tiennent dans l'espace, filtre de budget
+  (raccourcis ou fourchette), fiche prix / dimensions / vendeur / lien, aperçu dans la pièce avant
+  de confirmer, alerte si la place manque.
+- **Budget** : chaque meuble est « Déjà possédé » ou « À acheter » ; le total des achats prévus
+  s'affiche en haut et se met à jour à chaque remplacement.
+- **Inspirations utiles sans IA** : couleurs principales de la photo à appliquer à un mur ou à un
+  meuble, idées tirées de la note (« commode en bois clair », « mur vert »…).
 - Les projets restent **privés**, enregistrés dans l'appareil (aucun compte pour l'instant).
 
 ## Technologies

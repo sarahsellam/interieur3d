@@ -2,6 +2,7 @@
 // Modèles 3D : Poly Haven (https://polyhaven.com), licence CC0.
 // Meubles « maison » : construits par le code, avec des textures Poly Haven (CC0).
 // Dimensions en mètres : largeur (x) × profondeur (z) × hauteur (y).
+import type { MyFurniture } from '../model/types'
 
 export type FurnitureCategory = 'lit' | 'assise' | 'table' | 'rangement' | 'deco'
 
@@ -27,6 +28,15 @@ export interface CatalogItem {
   material: 'tissu' | 'bois' | 'cuir' | 'vegetal'
   author: string
   source: string
+  /** Meuble ajouté par l'utilisateur (« Mes meubles ») : représentation 3D simplifiée */
+  custom?: boolean
+  price?: number | null
+  vendor?: string
+  link?: string
+  imageId?: string
+  imageUrl?: string
+  /** Couleur de la représentation simplifiée */
+  color?: string
 }
 
 const ph = (id: string) => `https://polyhaven.com/a/${id}`
@@ -62,6 +72,57 @@ export const CATALOG: CatalogItem[] = [
 export const CEILING_LAMP = { file: 'models/modern_ceiling_lamp_01/model.json', author: 'James Ray Cock', source: ph('modern_ceiling_lamp_01') }
 
 export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CATALOG.map((c) => [c.id, c]))
+
+// ---------- « Mes meubles » ----------
+
+export const CUSTOM_PREFIX = 'perso:'
+const customRegistry: Record<string, CatalogItem> = {}
+
+/** Fiche « catalogue » d'un meuble personnel, pour l'afficher comme les autres. */
+export function customToCatalog(f: MyFurniture): CatalogItem {
+  return {
+    id: CUSTOM_PREFIX + f.id,
+    name: f.name || 'Meuble',
+    category: f.category,
+    file: '',
+    procedural: true,
+    custom: true,
+    width: f.width,
+    depth: f.depth,
+    height: f.height,
+    frontOffset: 0,
+    tucksUnder: f.category === 'assise' && f.height < 1.1 && f.width < 0.7,
+    hostsUnder: f.category === 'table',
+    material: f.category === 'lit' || f.category === 'assise' ? 'tissu' : 'bois',
+    author: f.vendor || 'Ajouté par vous',
+    source: f.link ?? '',
+    price: f.price,
+    vendor: f.vendor,
+    link: f.link,
+    imageId: f.imageId,
+    imageUrl: f.imageUrl,
+    color: f.color,
+  }
+}
+
+export function registerCustomFurniture(list: MyFurniture[]) {
+  for (const k of Object.keys(customRegistry)) delete customRegistry[k]
+  for (const f of list) customRegistry[CUSTOM_PREFIX + f.id] = customToCatalog(f)
+}
+
+/** Fiche d'un meuble, qu'il vienne du catalogue ou de « Mes meubles ». */
+export function getItem(modelId: string): CatalogItem | undefined {
+  return CATALOG_BY_ID[modelId] ?? customRegistry[modelId]
+}
+
+/** Prix retenu pour un meuble placé (prix saisi, sinon prix de la fiche). */
+export function itemPrice(it: { modelId: string; price?: number | null }): number | null {
+  if (typeof it.price === 'number') return it.price
+  const p = getItem(it.modelId)?.price
+  return typeof p === 'number' ? p : null
+}
+
+export const fmtPrice = (v: number) => `${v.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} €`
 
 export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
   lit: 'Lits',

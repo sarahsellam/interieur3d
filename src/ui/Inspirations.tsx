@@ -1,10 +1,103 @@
 // « Mes inspirations » : photos de la galerie ou liens (Pinterest…), avec ce qu'on aime dedans.
 // « Références de la pièce » : plan importé et photos de la vraie pièce.
 // Toute image peut être gardée visible à côté de la pièce pendant l'aménagement.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useProject, useStore } from '../store'
-import type { RefImage } from '../model/types'
+import type { Inspiration, RefImage } from '../model/types'
+import { WALL_LABEL, WALL_ORDER } from '../model/types'
+import { imageUrl } from '../model/storage'
+import { extractPalette, suggestFromNote, type Suggestion } from '../model/inspiration'
+import { getItem, ITEM_COLORS } from '../data/catalog'
 import { Icon, ImportButton, StoredImage } from './common'
+
+/** Choix de la cible d'une couleur : un mur, tous les murs ou le meuble sélectionné. */
+function ColorApply({ hex, onDone }: { hex: string; onDone: () => void }) {
+  const setWallColor = useStore((s) => s.setWallColor)
+  const setAll = useStore((s) => s.setAllWallsColor)
+  const setItemColor = useStore((s) => s.setItemColor)
+  const selection = useStore((s) => s.selection)
+  const selectedItem = useStore((s) => (s.selection?.type === 'item' ? s.layout.items.find((i) => i.uid === (s.selection as { id: string }).id) : undefined))
+  const c = selectedItem ? getItem(selectedItem.modelId) : undefined
+  const canItem = c && ITEM_COLORS[c.material].length > 0
+  return (
+    <div className="apply-menu">
+      <span className="apply-title">
+        <span className="dot" style={{ background: hex }} /> Appliquer à :
+      </span>
+      <div className="choice-row">
+        {WALL_ORDER.map((w) => (
+          <button key={w} type="button" className="chip" onClick={() => (setWallColor(w, hex), onDone())}>
+            {WALL_LABEL[w]}
+          </button>
+        ))}
+        <button type="button" className="chip" onClick={() => (setAll(hex), onDone())}>
+          Tous les murs
+        </button>
+        {canItem && selection?.type === 'item' && (
+          <button type="button" className="chip" onClick={() => (setItemColor(selection.id, hex), onDone())}>
+            {c!.name}
+          </button>
+        )}
+        <button type="button" className="chip ghost" onClick={onDone}>
+          Annuler
+        </button>
+      </div>
+      {!canItem && <span className="hint-text">Pour colorer un meuble, touchez-le d'abord dans la pièce.</span>}
+    </div>
+  )
+}
+
+/** Couleurs de la photo et idées tirées de la note, applicables à la pièce. */
+function InspirationIdeas({ i, inEditor }: { i: Inspiration; inEditor: boolean }) {
+  const update = useStore((s) => s.updateInspiration)
+  const addItem = useStore((s) => s.addItem)
+  const setItemColor = useStore((s) => s.setItemColor)
+  const [applying, setApplying] = useState<string | null>(null)
+  useEffect(() => {
+    if (!i.imageId || i.palette) return
+    let alive = true
+    imageUrl(i.imageId)
+      .then((u) => (u ? extractPalette(u) : null))
+      .then((p) => alive && p && update(i.id, { palette: p }))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [i.imageId, i.palette, i.id, update])
+  const ideas = suggestFromNote(i.note)
+  const applyIdea = (s: Suggestion) => {
+    if (s.kind === 'wall') return setApplying(s.color)
+    addItem(s.modelId)
+    const sel = useStore.getState().selection
+    if (s.color && sel?.type === 'item') setItemColor(sel.id, s.color)
+  }
+  if (!i.palette?.length && !ideas.length) return null
+  return (
+    <div className="inspi-ideas">
+      {i.palette && i.palette.length > 0 && (
+        <div className="palette" aria-label="Couleurs de la photo">
+          {i.palette.map((c) =>
+            inEditor ? (
+              <button key={c} type="button" className={`swatch small ${applying === c ? 'active' : ''}`} style={{ background: c }} onClick={() => setApplying(applying === c ? null : c)} aria-label={`Utiliser la couleur ${c}`} />
+            ) : (
+              <span key={c} className="swatch small" style={{ background: c }} />
+            ),
+          )}
+        </div>
+      )}
+      {inEditor && ideas.length > 0 && (
+        <div className="choice-row">
+          {ideas.map((s) => (
+            <button key={s.label} type="button" className="chip idea" onClick={() => applyIdea(s)}>
+              {s.kind === 'item' ? Icon.plus : <span className="dot" style={{ background: s.color }} />} {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {inEditor && applying && <ColorApply hex={applying} onDone={() => setApplying(null)} />}
+    </div>
+  )
+}
 
 const host = (url: string) => {
   try {
@@ -82,6 +175,7 @@ export function InspirationBoard({ allowPin = false }: { allowPin?: boolean }) {
               onBlur={(e) => e.target.value !== i.note && update(i.id, { note: e.target.value })}
               aria-label="Ce que j'aime dans cette inspiration"
             />
+            <InspirationIdeas i={i} inEditor={allowPin} />
             <div className="inspi-actions">
               {allowPin && i.imageId && (
                 <button type="button" className="chip" onClick={() => pin(pinned === i.imageId ? null : i.imageId!)}>

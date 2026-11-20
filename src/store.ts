@@ -1,11 +1,11 @@
 // État global de l'application : écran affiché, projet ouvert, version en cours
 // d'édition, sélection, historique (annuler / rétablir) et enregistrement.
 import { create } from 'zustand'
-import { CATALOG_BY_ID } from './data/catalog'
+import { CUSTOM_PREFIX, getItem, registerCustomFurniture } from './data/catalog'
 import { clampOffset, clampToRoom, snapPosition } from './model/geometry'
-import { loadInspirations, loadProjects, saveInspirations, saveProjects, deleteImage } from './model/storage'
+import { loadInspirations, loadMyFurniture, loadProjects, saveInspirations, saveMyFurniture, saveProjects, deleteImage } from './model/storage'
 import { startLayout, type StartKind } from './model/templates'
-import type { Inspiration, ItemDims, Layout, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ViewMode, WallSide } from './model/types'
+import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ViewMode, WallSide } from './model/types'
 import { uid } from './model/types'
 
 export type { Layout, Opening, PlacedItem, Room, ViewMode, WallSide } from './model/types'
@@ -34,6 +34,10 @@ interface State {
   /** Moment du dernier enregistrement (pour la confirmation « Enregistré ») */
   savedAt: number
   dirty: boolean
+  /** Meubles ajoutés par l'utilisateur (communs à tous les projets) */
+  myFurniture: MyFurniture[]
+  /** Remplacement en cours d'aperçu (non confirmé) */
+  preview: { uid: string; item: PlacedItem } | null
 
   // Navigation et projets
   goHome: () => void
@@ -86,6 +90,20 @@ interface State {
   setSnap: (patch: Partial<State['snap']>) => void
   pinImage: (id: string | null) => void
 
+  // Statut et prix
+  setItemStatus: (uid: string, status: ItemStatus) => void
+  setItemPrice: (uid: string, price: number | null) => void
+
+  // Remplacement
+  previewReplace: (uid: string, modelId: string) => void
+  cancelPreview: () => void
+  confirmReplace: () => void
+
+  // Mes meubles
+  saveMyFurniture: (f: MyFurniture) => void
+  removeMyFurniture: (id: string) => void
+  placeMyFurniture: (id: string) => void
+
   // Inspirations
   addInspiration: (i: Omit<Inspiration, 'id' | 'createdAt'>) => void
   updateInspiration: (id: string, patch: Partial<Inspiration>) => void
@@ -99,6 +117,8 @@ let lastRecord = { key: '', time: 0 }
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 
 const initialProjects = loadProjects()
+const initialFurniture = loadMyFurniture()
+registerCustomFurniture(initialFurniture)
 
 export const useStore = create<State>()((set, get) => {
   /** Modifie la version en cours après avoir mémorisé l'état précédent (pour « Annuler »). */
@@ -140,6 +160,8 @@ export const useStore = create<State>()((set, get) => {
     pinnedImage: null,
     savedAt: 0,
     dirty: false,
+    myFurniture: initialFurniture,
+    preview: null,
 
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
@@ -335,6 +357,8 @@ export const useStore = create<State>()((set, get) => {
       const n = layout.items.length % 5
       const base = { modelId, x: (n - 2) * 0.15, z: (n - 2) * 0.15, rot: 0 }
       const it: PlacedItem = { uid: uid(), ...base, ...clampToRoom(base, layout.room) }
+      // Un meuble trouvé sur Internet est a priori à acheter ; un meuble du catalogue représente souvent un meuble déjà là
+      if (modelId.startsWith(CUSTOM_PREFIX)) it.status = 'a-acheter'
       edit('ajout', (l) => l.items.push(it))
       set({ selection: { type: 'item', id: it.uid } })
     },
@@ -381,11 +405,58 @@ export const useStore = create<State>()((set, get) => {
       set({ selection: null })
     },
 
-    select: (selection) => set({ selection }),
+    select: (selection) => set({ selection, preview: null }),
     setView: (view) => set({ view }),
     setDragging: (dragging) => set({ dragging }),
     setSnap: (patch) => set({ snap: { ...get().snap, ...patch } }),
     pinImage: (pinnedImage) => set({ pinnedImage }),
+
+    setItemStatus: (id, status) => edit(`statut-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.status = status))),
+    setItemPrice: (id, price) => edit(`prix-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.price = price))),
+
+    previewReplace: (id, modelId) => {
+      const old = get().layout.items.find((i) => i.uid === id)
+      if (!old) return
+      const base: PlacedItem = { ...old, modelId, dims: undefined, color: null, price: null, locked: false }
+      set({ preview: { uid: id, item: { ...base, ...clampToRoom(base, get().layout.room) } } })
+    },
+    cancelPreview: () => set({ preview: null }),
+    confirmReplace: () => {
+      const p = get().preview
+      if (!p) return
+      edit('remplacer', (l) => {
+        l.items = l.items.map((it) => (it.uid === p.uid ? { ...p.item, status: 'a-acheter' } : it))
+      })
+      set({ preview: null })
+    },
+
+    saveMyFurniture: (f) => {
+      const exists = get().myFurniture.some((x) => x.id === f.id)
+      const myFurniture = exists ? get().myFurniture.map((x) => (x.id === f.id ? f : x)) : [f, ...get().myFurniture]
+      registerCustomFurniture(myFurniture)
+      saveMyFurniture(myFurniture)
+      // Rafraîchit la pièce si ce meuble y est déjà placé
+      set({ myFurniture, layout: { ...get().layout } })
+    },
+    removeMyFurniture: (id) => {
+      const f = get().myFurniture.find((x) => x.id === id)
+      if (f?.imageId) deleteImage(f.imageId)
+      const myFurniture = get().myFurniture.filter((x) => x.id !== id)
+      saveMyFurniture(myFurniture)
+      // Les exemplaires déjà placés restent affichés tant que la fiche existe : on les retire aussi
+      const modelId = CUSTOM_PREFIX + id
+      if (get().layout.items.some((it) => it.modelId === modelId)) edit('supprimer-meuble', (l) => (l.items = l.items.filter((it) => it.modelId !== modelId)))
+      registerCustomFurniture(myFurniture)
+      set({ myFurniture })
+    },
+    placeMyFurniture: (id) => {
+      get().addItem(CUSTOM_PREFIX + id)
+      const f = get().myFurniture.find((x) => x.id === id)
+      const sel = get().selection
+      if (f?.owned && sel?.type === 'item') {
+        set({ layout: { ...get().layout, items: get().layout.items.map((it) => (it.uid === sel.id ? { ...it, status: 'possede' as const } : it)) } })
+      }
+    },
 
     addInspiration: (i) => {
       const inspirations = [{ ...i, id: uid(), createdAt: Date.now() }, ...get().inspirations]
@@ -410,4 +481,4 @@ export const useStore = create<State>()((set, get) => {
 /** Projet ouvert. */
 export const useProject = () => useStore((s) => s.projects.find((p) => p.id === s.projectId) ?? null)
 
-export const catalogOf = (it: PlacedItem) => CATALOG_BY_ID[it.modelId]
+export const catalogOf = (it: PlacedItem) => getItem(it.modelId)

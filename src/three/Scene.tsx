@@ -179,13 +179,18 @@ function CameraRig() {
 
 function Items() {
   const items = useStore((s) => s.layout.items)
+  const preview = useStore((s) => s.preview)
   return (
     <>
-      {items.map((it) => (
-        <Suspense key={it.uid} fallback={null}>
-          <Furniture item={it} />
-        </Suspense>
-      ))}
+      {items.map((it) => {
+        // Pendant un aperçu de remplacement, le meuble proposé prend la place de l'ancien
+        const shown = preview && preview.uid === it.uid ? preview.item : it
+        return (
+          <Suspense key={it.uid + shown.modelId} fallback={null}>
+            <Furniture item={shown} />
+          </Suspense>
+        )
+      })}
     </>
   )
 }

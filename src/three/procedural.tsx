@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import { RoundedBox, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { texture } from '../data/finishes'
+import { CUSTOM_PREFIX, getItem } from '../data/catalog'
 import type { ItemDims } from '../model/types'
 
 const DEFAULT_FABRIC = '#d8cdb9'
@@ -293,7 +294,42 @@ export function WoolRug({ dims, color }: P) {
   return <mesh geometry={geo} material={wool} receiveShadow />
 }
 
+/**
+ * Représentation simplifiée d'un meuble ajouté depuis un lien ou à la main :
+ * une forme sobre selon son type (lit, assise, table, rangement), aux dimensions saisies.
+ * Elle est signalée comme telle dans l'interface.
+ */
+function SimplifiedFurniture({ dims, color, category }: P & { category: string }) {
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: color ?? '#cbbfae', roughness: 0.75, envMapIntensity: 0.6 }), [color])
+  const { width: W, depth: D, height: H } = dims
+  const r = Math.min(0.03, Math.min(W, D, H) / 4)
+  if (category === 'table') {
+    const t = Math.min(0.04, H * 0.1)
+    return (
+      <group>
+        <RoundedBox args={[W, t, D]} radius={Math.min(r, t / 2.2)} smoothness={3} position={[0, H - t / 2, 0]} material={mat} castShadow receiveShadow />
+        {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <Leg key={`${sx}${sz}`} x={sx * (W / 2 - 0.05)} z={sz * (D / 2 - 0.05)} h={H - t} mat={mat} r={0.02} />))}
+      </group>
+    )
+  }
+  if (category === 'assise' || category === 'lit') {
+    const seatH = Math.min(category === 'lit' ? 0.5 : 0.45, H * 0.55)
+    const backD = Math.min(0.2, D * 0.25)
+    return (
+      <group>
+        <RoundedBox args={[W, seatH, D]} radius={r * 2} smoothness={4} position={[0, seatH / 2, 0]} material={mat} castShadow receiveShadow />
+        <RoundedBox args={[W, H, backD]} radius={r * 2} smoothness={4} position={[0, H / 2, -D / 2 + backD / 2]} material={mat} castShadow receiveShadow />
+      </group>
+    )
+  }
+  return <RoundedBox args={[W, H, D]} radius={r} smoothness={3} position={[0, H / 2, 0]} material={mat} castShadow receiveShadow />
+}
+
 export function ProceduralModel({ id, dims, color }: { id: string } & P) {
+  if (id.startsWith(CUSTOM_PREFIX)) {
+    const c = getItem(id)
+    return <SimplifiedFurniture dims={dims} color={color ?? c?.color ?? null} category={c?.category ?? 'rangement'} />
+  }
   switch (id) {
     case 'sofa_lin':
       return <LinenSofa dims={dims} color={color} />

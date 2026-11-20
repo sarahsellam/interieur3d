@@ -1,14 +1,16 @@
 // Éditeur « Mon aménagement » : la pièce au centre, les outils autour.
 import { useEffect, useMemo, useState } from 'react'
 import { useProgress } from '@react-three/drei'
-import { CATALOG, CATALOG_BY_ID, CATEGORY_LABELS, ITEM_COLORS, assetUrl, type FurnitureCategory } from '../data/catalog'
+import { CATALOG, CATEGORY_LABELS, ITEM_COLORS, fmtPrice, getItem, itemPrice, type FurnitureCategory } from '../data/catalog'
 import { FLOORS, WALL_COLORS, floorTexture } from '../data/finishes'
-import { itemDims, overlapsOf, wallLength } from '../model/geometry'
+import { budgetOf, itemDims, overlapsOf, wallLength } from '../model/geometry'
 import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type OpeningKind, type ViewMode, type WallSide } from '../model/types'
 import { ROOM_LIMITS, useProject, useStore } from '../store'
 import { captureThumb } from '../three/capture'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
+import { ItemThumb, MyFurnitureSection } from './MyFurniture'
+import { ReplacePanel } from './Replace'
 
 const OPENING_KINDS: OpeningKind[] = ['fenetre', 'porte-fenetre', 'porte', 'placard', 'niche']
 
@@ -79,6 +81,67 @@ function VersionMenu({ onClose }: { onClose: () => void }) {
   )
 }
 
+/** Budget des achats prévus (les meubles « Déjà possédé » ne comptent pas). */
+function BudgetButton() {
+  const layout = useStore((s) => s.layout)
+  const select = useStore((s) => s.select)
+  const [open, setOpen] = useState(false)
+  const b = useMemo(() => budgetOf(layout, itemPrice), [layout])
+  return (
+    <div className="budget">
+      <button type="button" className="budget-btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="muted">À acheter</span>
+        <strong>{fmtPrice(b.total)}</strong>
+      </button>
+      {open && (
+        <div className="popover right budget-pop" role="dialog" aria-label="Budget">
+          <div className="popover-head">
+            <strong>Budget de {layout.name.toLowerCase()}</strong>
+            <button type="button" className="icon-btn small" onClick={() => setOpen(false)} aria-label="Fermer">
+              {Icon.close}
+            </button>
+          </div>
+          {b.toBuy.length === 0 ? (
+            <p className="hint-text">Aucun achat prévu. Touchez un meuble et choisissez « À acheter » pour l'ajouter au budget.</p>
+          ) : (
+            <div className="budget-list">
+              {b.toBuy.map((it) => {
+                const c = getItem(it.modelId)
+                const p = itemPrice(it)
+                return (
+                  <button
+                    key={it.uid}
+                    type="button"
+                    className="budget-line"
+                    onClick={() => {
+                      select({ type: 'item', id: it.uid })
+                      setOpen(false)
+                    }}
+                  >
+                    {c && <ItemThumb c={c} className="budget-img" />}
+                    <span className="budget-name">{c?.name ?? 'Meuble'}</span>
+                    <span className={p === null ? 'muted' : ''}>{p === null ? 'Prix à saisir' : fmtPrice(p)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <div className="budget-total">
+            <span>Total des achats prévus</span>
+            <strong>{fmtPrice(b.total)}</strong>
+          </div>
+          {b.missing > 0 && (
+            <p className="hint-text">
+              {b.missing} achat{b.missing > 1 ? 's' : ''} sans prix : touchez la ligne pour saisir le prix.
+            </p>
+          )}
+          <p className="hint-text">{b.owned.length} meuble{b.owned.length > 1 ? 's' : ''} déjà possédé{b.owned.length > 1 ? 's' : ''}, non compté{b.owned.length > 1 ? 's' : ''}.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TopBar() {
   const project = useProject()
   const layout = useStore((s) => s.layout)
@@ -131,6 +194,7 @@ function TopBar() {
         ))}
       </div>
       <div className="top-right">
+        <BudgetButton />
         <button type="button" className="icon-btn" onClick={undo} disabled={!canUndo} aria-label="Annuler" title="Annuler">
           {Icon.undo}
         </button>
@@ -160,6 +224,7 @@ function Catalog({ onAdded }: { onAdded: () => void }) {
   const cats = Object.keys(CATEGORY_LABELS) as FurnitureCategory[]
   return (
     <div className="catalog">
+      <MyFurnitureSection />
       {cats.map((cat) => (
         <section key={cat}>
           <h3>{CATEGORY_LABELS[cat]}</h3>
@@ -176,7 +241,7 @@ function Catalog({ onAdded }: { onAdded: () => void }) {
                 aria-label={`Ajouter : ${c.name}`}
               >
                 <span className="card-img">
-                  <img src={assetUrl(`thumbs/${c.id}.webp`)} alt="" loading="lazy" draggable={false} />
+                  <ItemThumb c={c} />
                   <span className="card-plus" aria-hidden>
                     {Icon.plus}
                   </span>
@@ -343,9 +408,16 @@ function ItemControls({ id }: { id: string }) {
   const duplicateItem = useStore((s) => s.duplicateItem)
   const removeItem = useStore((s) => s.removeItem)
   const select = useStore((s) => s.select)
+  const setItemStatus = useStore((s) => s.setItemStatus)
+  const setItemPrice = useStore((s) => s.setItemPrice)
   const [sub, setSub] = useState<'move' | 'color' | 'dims' | null>(null)
+  const [replacing, setReplacing] = useState(false)
   if (!item) return null
-  const c = CATALOG_BY_ID[item.modelId]
+  const c = getItem(item.modelId)
+  if (!c) return null
+  if (replacing) return <ReplacePanel uid={item.uid} onClose={() => setReplacing(false)} />
+  const price = itemPrice(item)
+  const toBuy = item.status === 'a-acheter'
   const d = itemDims(item)
   const deg = Math.round((item.rot * 180) / Math.PI) % 360
   const nudge = (dx: number, dz: number) => moveItem(item.uid, item.x + dx, item.z + dz)
@@ -364,7 +436,52 @@ function ItemControls({ id }: { id: string }) {
           {Icon.close}
         </button>
       </div>
+      <div className="status-row">
+        <div className="seg-small" role="group" aria-label="Statut du meuble">
+          <button type="button" className={!toBuy ? 'active' : ''} onClick={() => setItemStatus(item.uid, 'possede')}>
+            Déjà possédé
+          </button>
+          <button type="button" className={toBuy ? 'active' : ''} onClick={() => setItemStatus(item.uid, 'a-acheter')}>
+            À acheter
+          </button>
+        </div>
+        {toBuy && (
+          <label className="price-field">
+            <input
+              key={`${item.uid}-${price}`}
+              type="text"
+              inputMode="decimal"
+              defaultValue={price ?? ''}
+              placeholder="Prix"
+              aria-label="Prix"
+              onBlur={(e) => {
+                const v = parseFloat(e.target.value.replace(',', '.').replace(/\s/g, ''))
+                setItemPrice(item.uid, Number.isNaN(v) ? null : v)
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            />
+            <span>€</span>
+          </label>
+        )}
+        {c.custom && (
+          <span className="muted small-note">
+            3D simplifiée{c.vendor ? ` · ${c.vendor}` : ''}
+            {c.link && (
+              <>
+                {' · '}
+                <a href={c.link} target="_blank" rel="noreferrer">
+                  Voir le produit
+                </a>
+              </>
+            )}
+          </span>
+        )}
+      </div>
       <div className="tool-row">
+        <button type="button" className="tool" onClick={() => setReplacing(true)}>
+          {Icon.swap}
+          <span>Remplacer</span>
+        </button>
         <button type="button" className={`tool ${sub === 'move' ? 'on' : ''}`} onClick={() => setSub(sub === 'move' ? null : 'move')} disabled={locked}>
           {Icon.move}
           <span>Déplacer</span>
