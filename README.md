@@ -138,5 +138,5 @@ secrète : elle n'est jamais dans l'application ni dans ce dépôt.
 - La clé se saisit comme secret `ANTHROPIC_API_KEY` dans le tableau de bord Cloudflare.
 - Déploiement : `cd relais && npm install && npx wrangler deploy`.
 - L'adresse du relais est indiquée à l'application dans le fichier `.env` (`VITE_RELAIS_URL`, ici https://interieur3d.sellamsarah.workers.dev). Le Worker Cloudflare s'appelle `interieur3d` et se redéploie tout seul à chaque envoi sur GitHub (Workers Builds, dossier `relais`).
-- Coût : environ 10 à 20 centimes par idée demandée, 1 à 2 centimes par lien lu.
+- Coût mesuré : environ 0,18 $ par idée demandée (5 300 jetons envoyés, 7 800 reçus, 1 à 2 minutes), 1 à 2 centimes par lien lu.
   Fixez un plafond de dépense mensuel dans la console Anthropic.

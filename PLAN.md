@@ -64,7 +64,7 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
   galerie ou lien Pinterest, avec une note (« le mur vert », « le bois de la
   commode »). Une photo de référence peut rester visible à côté de la pièce.
 
-## Étape 3 bis — Mes meubles et budget ⏳ EN COURS
+## Étape 3 bis — Mes meubles et budget ✅ livrée
 - Accueil sur fond beige clair chaleureux #F2EBE1, cartes blanches ou ivoire.
 - « Mes meubles » : ajouter un meuble trouvé sur Internet avec « Ajouter depuis un lien »
   (photo, nom, prix, dimensions, vendeur, lien), à vérifier et compléter à la main,
@@ -82,7 +82,7 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
   d'un lien, propositions classées selon l'ambiance des inspirations, produits de vraies
   boutiques (catalogue partenaire / affiliation).
 
-## Étape 4 — Assistant IA « Demander une idée »
+## Étape 4 — Assistant IA « Demander une idée » ✅ livrée
 - Demande en langage courant (« Crée un coin bureau en gardant mon lit et en laissant
   l'accès à la porte-fenêtre »).
 - Deux propositions à prévisualiser, en respectant les meubles verrouillés, les

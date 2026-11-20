@@ -122,7 +122,7 @@ export function IdeaPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
           <p className="hint-text">
-            Les meubles verrouillés ne bougeront pas. L'assistant propose deux idées ; vous les regardez dans la pièce avant de choisir. Chaque demande coûte environ 10 à 20 centimes.
+            Les meubles verrouillés ne bougeront pas. L'assistant propose deux idées ; vous les regardez dans la pièce avant de choisir. Chaque demande coûte environ 20 centimes.
           </p>
           {error && <p className="notice warn">{error}</p>}
           <button type="button" className="btn primary large" onClick={send} disabled={!demande.trim() && chosen.length === 0}>
@@ -135,7 +135,7 @@ export function IdeaPanel({ onClose }: { onClose: () => void }) {
         <div className="idea-loading" role="status">
           <span className="spinner" aria-hidden />
           <p>L'assistant étudie votre pièce{chosen.length ? ' et vos inspirations' : ''}…</p>
-          <p className="hint-text">Cela prend souvent 30 secondes à une minute.</p>
+          <p className="hint-text">Cela prend en général une à deux minutes.</p>
         </div>
       )}
 
