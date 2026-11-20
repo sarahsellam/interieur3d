@@ -1,5 +1,5 @@
 # Relais de Mon Intérieur 3D (Cloudflare Workers, offre gratuite)
-name = "interieur3d-relais"
+name = "interieur3d"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
