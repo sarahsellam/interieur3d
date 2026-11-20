@@ -8,10 +8,11 @@ import '@fontsource/instrument-serif/400-italic.css'
 import './index.css'
 import App from './App'
 import { ErrorBoundary } from './ui/Fallback'
+import { useStore } from './store'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
+    <ErrorBoundary onHome={() => useStore.getState().goHome()}>
       <App />
     </ErrorBoundary>
   </StrictMode>,

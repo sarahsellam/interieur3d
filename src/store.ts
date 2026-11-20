@@ -7,6 +7,7 @@ import { loadInspirations, loadMyFurniture, loadProjects, saveInspirations, save
 import { startLayout, type StartKind } from './model/templates'
 import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ViewMode, WallSide } from './model/types'
 import { uid } from './model/types'
+import { hasWebGL2 } from './ui/Fallback'
 
 export type { Layout, Opening, PlacedItem, Room, ViewMode, WallSide } from './model/types'
 
@@ -103,6 +104,10 @@ interface State {
   cancelPreview: () => void
   confirmReplace: () => void
 
+  /** La 3D (WebGL 2) fonctionne sur ce navigateur ; sinon l'éditeur utilise le plan 2D */
+  threeD: boolean
+  disable3D: () => void
+
   /** Panneau Meubles / Pièce / Mes inspirations ouvert */
   panelOpen: boolean
   setPanelOpen: (v: boolean) => void
@@ -179,6 +184,8 @@ export const useStore = create<State>()((set, get) => {
     layoutPreview: null,
     ideaOpen: false,
     panelOpen: typeof window === 'undefined' || window.innerWidth > 860,
+    threeD: hasWebGL2(),
+    disable3D: () => set({ threeD: false, view: 'plan' }),
     setPanelOpen: (panelOpen) => set({ panelOpen }),
     setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null } : { layoutPreview: null }) }),
 

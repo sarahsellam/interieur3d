@@ -60,6 +60,7 @@ export const Icon = {
   wall: svg(<path d="M3 6h18v12H3zM3 12h18M9 6v6M15 12v6" />),
   alert: svg(<path d="M12 4l9 16H3zM12 10v4M12 17v.5" />),
   grid: svg(<path d="M4 4h16v16H4zM4 10h16M4 15h16M10 4v16M15 4v16" />),
+  more: svg(<path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />),
   share: svg(<path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />),
   download: svg(<path d="M12 4v11M8 11l4 4 4-4M5 20h14" />),
   upload: svg(<path d="M12 20V9M8 13l4-4 4 4M5 4h14" />),

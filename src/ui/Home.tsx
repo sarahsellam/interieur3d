@@ -9,6 +9,7 @@ import { deleteImage } from '../model/storage'
 import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
+import { Plan2D } from './Plan2D'
 
 const dateFr = (t: number) => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
 
@@ -20,7 +21,9 @@ export function Home() {
   const deleteProject = useStore((s) => s.deleteProject)
   const createProject = useStore((s) => s.createProject)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [menuId, setMenuId] = useState<string | null>(null)
   const [showInspi, setShowInspi] = useState(false)
+  const threeD = useStore((s) => s.threeD)
 
   return (
     <div className="home">
@@ -36,8 +39,8 @@ export function Home() {
       <section className="hero">
         <div className="hero-text">
           <p className="eyebrow">Aménagement d'intérieur</p>
-          <h1>Recréez votre pièce, essayez, gardez l'aménagement que vous préférez.</h1>
-          <p className="lead">Saisissez vos dimensions, placez vos fenêtres et vos meubles, comparez plusieurs versions. Vos projets restent privés, sur cet appareil.</p>
+          <h1>Aménagez votre pièce en 3D</h1>
+          <p className="lead">Saisissez vos dimensions, placez fenêtres et meubles, comparez plusieurs versions et gardez celle que vous préférez. Vos projets restent privés, sur cet appareil.</p>
           <div className="hero-actions">
             <button type="button" className="btn primary large" onClick={startWizard}>
               Créer mon espace
@@ -50,7 +53,17 @@ export function Home() {
               Essayer l'exemple
             </button>
           </div>
+          {!threeD && <p className="hint-text hero-note">Sur ce navigateur, la 3D n'est pas disponible : vous travaillerez sur le plan, qui reste entièrement utilisable.</p>}
         </div>
+        <figure className="hero-visual">
+          <img
+            src={`${import.meta.env.BASE_URL}accueil/chambre-exemple.webp`}
+            srcSet={`${import.meta.env.BASE_URL}accueil/chambre-exemple-720.webp 720w, ${import.meta.env.BASE_URL}accueil/chambre-exemple.webp 1440w`}
+            sizes="(max-width: 860px) 100vw, 50vw"
+            alt="La chambre d'exemple vue à hauteur des yeux : mur rose poudré, coiffeuse, fenêtre et porte-fenêtre"
+          />
+          <figcaption>La chambre d'exemple, à hauteur des yeux</figcaption>
+        </figure>
       </section>
 
       <InstallCard />
@@ -69,35 +82,52 @@ export function Home() {
                 const v = p.versions.find((x) => x.id === p.activeVersionId) ?? p.versions[0]
                 return (
                   <article key={p.id} className="project-card">
-                    <button type="button" className="project-open" onClick={() => openProject(p.id)}>
-                      {v?.thumb ? <img src={v.thumb} alt="" /> : <div className="img-placeholder" />}
+                    <button type="button" className="project-thumb" onClick={() => openProject(p.id)} aria-label={`Reprendre ${p.name}`}>
+                      {v?.thumb ? <img src={v.thumb} alt="" /> : v ? <Plan2D layout={v} className="project-plan" /> : <div className="img-placeholder" />}
+                    </button>
+                    <div className="project-body">
                       <span className="project-name">{p.name}</span>
                       <span className="project-meta">
                         {ROOM_TYPE_LABEL[p.roomType]} · {p.versions.length} version{p.versions.length > 1 ? 's' : ''} · {dateFr(p.updatedAt)}
                       </span>
-                    </button>
-                    {confirmId === p.id ? (
-                      <div className="confirm-inline">
-                        <span>Supprimer ce projet ?</span>
-                        <button
-                          type="button"
-                          className="chip danger"
-                          onClick={() => {
-                            deleteProject(p.id)
-                            setConfirmId(null)
-                          }}
-                        >
-                          Supprimer
-                        </button>
-                        <button type="button" className="chip" onClick={() => setConfirmId(null)}>
-                          Annuler
-                        </button>
-                      </div>
-                    ) : (
-                      <button type="button" className="icon-btn small project-del" onClick={() => setConfirmId(p.id)} aria-label={`Supprimer ${p.name}`}>
-                        {Icon.trash}
-                      </button>
-                    )}
+                      {confirmId === p.id ? (
+                        <div className="confirm-inline">
+                          <span>Supprimer ce projet ?</span>
+                          <button
+                            type="button"
+                            className="chip danger"
+                            onClick={() => {
+                              deleteProject(p.id)
+                              setConfirmId(null)
+                              setMenuId(null)
+                            }}
+                          >
+                            Supprimer
+                          </button>
+                          <button type="button" className="chip" onClick={() => (setConfirmId(null), setMenuId(null))}>
+                            Annuler
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="project-actions">
+                          <button type="button" className="btn primary" onClick={() => openProject(p.id)}>
+                            Reprendre
+                          </button>
+                          <div className="more">
+                            <button type="button" className="icon-btn small" onClick={() => setMenuId(menuId === p.id ? null : p.id)} aria-label={`Autres actions pour ${p.name}`} aria-expanded={menuId === p.id}>
+                              {Icon.more}
+                            </button>
+                            {menuId === p.id && (
+                              <div className="more-menu" role="menu">
+                                <button type="button" role="menuitem" className="danger" onClick={() => setConfirmId(p.id)}>
+                                  {Icon.trash} Supprimer le projet
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </article>
                 )
               })}

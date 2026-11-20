@@ -157,6 +157,7 @@ function TopBar() {
   const goHome = useStore((s) => s.goHome)
   const [menu, setMenu] = useState(false)
   const [flash, setFlash] = useState(false)
+  const threeD = useStore((s) => s.threeD)
   const ideaOpen = useStore((s) => s.ideaOpen)
   const setIdeaOpen = useStore((s) => s.setIdeaOpen)
 
@@ -191,7 +192,16 @@ function TopBar() {
       </div>
       <div className="segmented" role="tablist" aria-label="Type de vue">
         {(['plan', '3d', 'yeux'] as ViewMode[]).map((v) => (
-          <button key={v} type="button" role="tab" aria-selected={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            className={view === v ? 'active' : ''}
+            onClick={() => setView(v)}
+            disabled={!threeD && v !== 'plan'}
+            title={!threeD && v !== 'plan' ? 'La 3D n’est pas disponible sur ce navigateur' : undefined}
+          >
             {VIEW_LABEL[v]}
           </button>
         ))}
@@ -713,6 +723,23 @@ function SnapChips() {
   )
 }
 
+/** Prévient, sans bloquer, que l'éditeur fonctionne en plan 2D. */
+function No3DNotice() {
+  const threeD = useStore((s) => s.threeD)
+  const [hidden, setHidden] = useState(false)
+  if (threeD || hidden) return null
+  return (
+    <div className="no3d-notice" role="status">
+      <span>
+        <strong>La 3D n'est pas disponible sur ce navigateur.</strong> Le plan reste entièrement utilisable : touchez un meuble pour le déplacer, le tourner ou le remplacer.
+      </span>
+      <button type="button" className="icon-btn small" onClick={() => setHidden(true)} aria-label="Masquer">
+        {Icon.close}
+      </button>
+    </div>
+  )
+}
+
 const HINT_KEY = 'mi3d-aide-yeux'
 
 function EyeLevelHint() {
@@ -799,6 +826,7 @@ export function EditorUI() {
       {ideaOpen && <IdeaPanel onClose={() => setIdeaOpen(false)} />}
       <TopBar />
       <SidePanel />
+      <No3DNotice />
       <OverlapBanner />
       <SnapChips />
       <PinnedImage />
