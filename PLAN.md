@@ -50,7 +50,9 @@ suivante qu'après validation.
 - Réglage automatique de la qualité graphique selon l'appareil.
 
 ## Étape 6 — Application installable
-- Hébergement définitif sur un nom de domaine (par exemple Vercel ou Netlify).
+- ✅ Déjà fait : hébergement gratuit sur GitHub Pages (https://sarahsellam.github.io/interieur3d/),
+  mis à jour automatiquement à chaque nouvelle version.
+- Nom de domaine personnalisé (optionnel).
 - Installation sur l'écran d'accueil (iPad, iPhone, Android) avec fonctionnement hors ligne.
 - Optimisation des temps de chargement.
 
