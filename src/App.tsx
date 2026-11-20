@@ -5,6 +5,7 @@ import { preloadCatalog } from './three/Furniture'
 import { SidePanel } from './ui/Panels'
 import { Hint, Loader, SelectionBar, TopBar, VisitHint } from './ui/Overlay'
 import { CATALOG } from './data/catalog'
+import { Problem, hasWebGL2 } from './ui/Fallback'
 
 /** Qualité graphique : réduite sur les petits téléphones pour rester fluide. */
 function detectQuality(): 'high' | 'low' {
@@ -20,6 +21,7 @@ export default function App() {
   const quality = useMemo(detectQuality, [])
   useMemo(() => { if (!thumb) preloadCatalog(CATALOG.map((c) => c.file)) }, [thumb])
   if (thumb) return <ThumbScene id={thumb} />
+  if (!hasWebGL2()) return <Problem title="Ce navigateur ne peut pas afficher la 3D" detail="WebGL 2 indisponible" />
   return (
     <div className="app">
       <div className="viewport">

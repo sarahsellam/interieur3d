@@ -228,3 +228,9 @@ input[type='range'] { width: 100%; accent-color: var(--accent); height: 28px; }
   .panel.closed .tabs { padding-bottom: 10px; }
   .panel.closed .tabs button.active { background: transparent; color: var(--ink-2); }
 }
+
+.problem { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: var(--bg); user-select: text; -webkit-user-select: text; }
+.problem-box { max-width: 520px; display: grid; gap: 12px; }
+.problem h1 { font-size: 22px; margin: 0; }
+.problem p { margin: 0; color: var(--ink-2); }
+.problem-tech { font-size: 12px; word-break: break-word; }
