@@ -108,6 +108,7 @@ function CameraRig() {
   const view = useStore((s) => s.view)
   const { width: W, depth: D } = useStore((s) => shownLayout(s).room)
   const ideaOpen = useStore((s) => s.ideaOpen)
+  const panelOpen = useStore((s) => s.panelOpen)
   const size = useThree((s) => s.size)
   const invalidate = useThree((s) => s.invalidate)
 
@@ -120,7 +121,8 @@ function CameraRig() {
     const left = narrow ? 0 : 354
     // Le panneau de l'assistant occupe la droite sur tablette
     const right = !narrow && ideaOpen ? 404 : 0
-    const bottom = narrow ? size.height * 0.44 : 0
+    // Sur téléphone : le panneau du bas et les boutons d'alignement juste au-dessus
+    const bottom = narrow ? (panelOpen ? size.height * 0.44 : 78) + 52 : 0
     const usableW = size.width - left - right - 32
     const usableH = size.height - top - bottom - 64
     const zoom = Math.min(usableW / (W + 2 * WALL_T + 0.6), usableH / (D + 2 * WALL_T + 0.6))
@@ -128,7 +130,7 @@ function CameraRig() {
     const px = (left - right) / 2
     const py = top + usableH / 2 + 32 - size.height / 2
     return { narrow, zoom, offX: -px / zoom, offZ: -py / zoom }
-  }, [size.width, size.height, W, D, ideaOpen])
+  }, [size.width, size.height, W, D, ideaOpen, panelOpen])
   const topZoom = frame.zoom
 
   useEffect(() => invalidate(), [view, topZoom, invalidate])
@@ -150,7 +152,7 @@ function CameraRig() {
       <>
         <OrthographicCamera makeDefault position={[offX, 30, offZ + 0.0001]} zoom={topZoom} near={0.1} far={100} />
         <OrbitControls
-          key={`top-${W}-${D}-${narrow}-${ideaOpen}`}
+          key={`top-${W}-${D}-${narrow}-${ideaOpen}-${narrow && panelOpen}`}
           makeDefault
           target={[offX, 0, offZ]}
           enableRotate={false}

@@ -103,6 +103,10 @@ interface State {
   cancelPreview: () => void
   confirmReplace: () => void
 
+  /** Panneau Meubles / Pièce / Mes inspirations ouvert */
+  panelOpen: boolean
+  setPanelOpen: (v: boolean) => void
+
   // Assistant
   ideaOpen: boolean
   setIdeaOpen: (v: boolean) => void
@@ -174,6 +178,8 @@ export const useStore = create<State>()((set, get) => {
     preview: null,
     layoutPreview: null,
     ideaOpen: false,
+    panelOpen: typeof window === 'undefined' || window.innerWidth > 860,
+    setPanelOpen: (panelOpen) => set({ panelOpen }),
     setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null } : { layoutPreview: null }) }),
 
     reloadFromStorage: () => {

@@ -184,7 +184,7 @@ function TopBar() {
         <div className="project-title">
           <span className="project-name-top">{project?.name}</span>
           <button type="button" className="version-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
-            {layout.name} {Icon.chevron}
+            <span className="version-name">{layout.name}</span> {Icon.chevron}
           </button>
         </div>
         {menu && <VersionMenu onClose={() => setMenu(false)} />}
@@ -363,10 +363,12 @@ type Tab = 'meubles' | 'piece' | 'inspi'
 
 function SidePanel() {
   const [tab, setTab] = useState<Tab>('meubles')
-  const [open, setOpen] = useState(true)
+  const open = useStore((s) => s.panelOpen)
+  const setPanelOpen = useStore((s) => s.setPanelOpen)
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => setPanelOpen(typeof v === 'function' ? v(useStore.getState().panelOpen) : v)
   const view = useStore((s) => s.view)
-  // À hauteur des yeux, le panneau se replie pour laisser toute la place à la pièce
-  useEffect(() => setOpen(view !== 'yeux'), [view])
+  // À hauteur des yeux (et sur téléphone), le panneau se replie pour laisser toute la place à la pièce
+  useEffect(() => setPanelOpen(view !== 'yeux' && window.innerWidth > 860), [view, setPanelOpen])
   const choose = (t: Tab) => {
     setTab(t)
     setOpen(true)
