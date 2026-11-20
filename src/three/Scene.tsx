@@ -7,7 +7,7 @@ import { ToneMappingMode } from 'postprocessing'
 import * as THREE from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { AmbientEnvironment } from './AmbientEnvironment'
-import { useStore } from '../store'
+import { shownLayout, useStore } from '../store'
 import { Room, SHADOW_ONLY_LAYER, WALL_T, windowLights } from './Room'
 import { Furniture } from './Furniture'
 import { DragController } from './drag'
@@ -18,8 +18,8 @@ import { CEILING_LAMP, assetUrl } from '../data/catalog'
 
 /** Lumière naturelle : soleil et ciel entrant par les fenêtres, ambiance douce. */
 function Lights({ quality }: { quality: 'high' | 'low' }) {
-  const room = useStore((s) => s.layout.room)
-  const openings = useStore((s) => s.layout.openings)
+  const room = useStore((s) => shownLayout(s).room)
+  const openings = useStore((s) => shownLayout(s).openings)
   const view = useStore((s) => s.view)
   const windows = useMemo(() => windowLights(room, openings), [room, openings])
   const sun = useMemo(() => {
@@ -89,7 +89,7 @@ function WindowSkyLight({ center, inward, width, height }: { center: THREE.Vecto
 /** Suspension en verre au centre du plafond (mode visite). */
 function CeilingLamp() {
   const view = useStore((s) => s.view)
-  const H = useStore((s) => s.layout.room.height)
+  const H = useStore((s) => shownLayout(s).room.height)
   const { scene } = useGLTF(assetUrl(CEILING_LAMP.file), false, false)
   const obj = useMemo(() => {
     const o = scene.clone(true)
@@ -106,7 +106,8 @@ function CeilingLamp() {
 
 function CameraRig() {
   const view = useStore((s) => s.view)
-  const { width: W, depth: D } = useStore((s) => s.layout.room)
+  const { width: W, depth: D } = useStore((s) => shownLayout(s).room)
+  const ideaOpen = useStore((s) => s.ideaOpen)
   const size = useThree((s) => s.size)
   const invalidate = useThree((s) => s.invalidate)
 
@@ -117,15 +118,17 @@ function CameraRig() {
     // On réserve aussi la ligne des alertes et des réglages d'alignement, sous la barre du haut
     const top = (narrow ? 104 : 60) + 44
     const left = narrow ? 0 : 354
+    // Le panneau de l'assistant occupe la droite sur tablette
+    const right = !narrow && ideaOpen ? 404 : 0
     const bottom = narrow ? size.height * 0.44 : 0
-    const usableW = size.width - left - 32
+    const usableW = size.width - left - right - 32
     const usableH = size.height - top - bottom - 64
     const zoom = Math.min(usableW / (W + 2 * WALL_T + 0.6), usableH / (D + 2 * WALL_T + 0.6))
     // Décalage du centre de la pièce vers le centre de la zone visible
-    const px = left / 2
+    const px = (left - right) / 2
     const py = top + usableH / 2 + 32 - size.height / 2
     return { narrow, zoom, offX: -px / zoom, offZ: -py / zoom }
-  }, [size.width, size.height, W, D])
+  }, [size.width, size.height, W, D, ideaOpen])
   const topZoom = frame.zoom
 
   useEffect(() => invalidate(), [view, topZoom, invalidate])
@@ -147,7 +150,7 @@ function CameraRig() {
       <>
         <OrthographicCamera makeDefault position={[offX, 30, offZ + 0.0001]} zoom={topZoom} near={0.1} far={100} />
         <OrbitControls
-          key={`top-${W}-${D}-${narrow}`}
+          key={`top-${W}-${D}-${narrow}-${ideaOpen}`}
           makeDefault
           target={[offX, 0, offZ]}
           enableRotate={false}
@@ -178,7 +181,7 @@ function CameraRig() {
 }
 
 function Items() {
-  const items = useStore((s) => s.layout.items)
+  const items = useStore((s) => shownLayout(s).items)
   const preview = useStore((s) => s.preview)
   return (
     <>

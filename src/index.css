@@ -497,3 +497,39 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
 .panel .link-row { min-width: 0; }
 .panel .link-row .btn { width: auto; flex: none; }
 .panel .link-row input { flex: 1; min-width: 0; }
+
+/* ---------- Assistant « Demander une idée » ---------- */
+.idea-btn { background: var(--white); border-color: var(--bordeaux); color: var(--bordeaux); margin-right: 4px; }
+.idea-btn.on { background: var(--bordeaux); color: var(--white); }
+.idea-panel {
+  position: absolute; z-index: 9; top: calc(var(--top-h) + var(--safe-t) + 12px); right: max(12px, var(--safe-r)); bottom: calc(12px + var(--safe-b));
+  width: 380px; background: var(--white); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(41,35,33,.18);
+  padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+}
+.app:has(.idea-panel) .snap-chips, .app:has(.idea-panel) .pinned-view, .app:has(.idea-panel) .overlap-banner { display: none; }
+.idea-form, .idea-results, .idea-applied { display: grid; gap: 12px; }
+.idea-form textarea { border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; font-size: 16px; resize: vertical; background: var(--white); }
+.chip.small-chip { white-space: normal; text-align: left; min-height: 32px; padding: 6px 12px; font-size: 12px; line-height: 1.3; }
+.idea-inspi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.idea-inspi-item { display: grid; gap: 4px; border: 2px solid transparent; border-radius: 10px; padding: 3px; background: var(--sand-2); text-align: left; font-size: 11px; font-weight: 500; }
+.idea-inspi-item img, .idea-inspi-item .img-placeholder, .idea-inspi-item .thumb-empty { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 7px; display: block; }
+.idea-inspi-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.idea-inspi-item.on { border-color: var(--bordeaux); background: var(--bordeaux-soft); }
+.idea-loading { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 30px 10px; }
+.idea-loading p { margin: 0; font-family: var(--serif); font-size: 22px; }
+.idea-loading .hint-text { font-family: var(--sans); font-size: 13px; }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--sand); border-top-color: var(--bordeaux); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.seg-small.compare { justify-self: start; }
+.idea-card { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; }
+.idea-card.shown { border-color: var(--bordeaux); background: var(--bordeaux-soft); }
+.idea-card h3 { font-family: var(--serif); font-weight: 400; font-size: 21px; margin: 0; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.idea-card p { margin: 0; font-size: 14px; }
+.idea-notes { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2); }
+.idea-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.idea-applied .notice { display: flex; gap: 8px; align-items: flex-start; }
+.idea-applied .notice svg { width: 18px; height: 18px; flex: none; }
+@media (max-width: 1100px) { .idea-label { display: none; } .idea-btn { padding: 0 12px; } }
+@media (max-width: 860px) {
+  .idea-panel { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(8px + var(--safe-b)); max-height: 62vh; }
+}

@@ -5,7 +5,7 @@
 import { useMemo } from 'react'
 import { Html, Line } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
-import { useStore } from '../store'
+import { shownLayout, useStore } from '../store'
 import { GRID_STEP } from '../model/geometry'
 import { WALL_LABEL } from '../model/types'
 import { wallFrame, type WallOpening, type WallSpec } from './architecture'
@@ -181,7 +181,7 @@ function WallPlan({ spec, side }: { spec: WallSpec; side: keyof typeof WALL_LABE
 }
 
 function Grid() {
-  const { width: W, depth: D, height: H } = useStore((s) => s.layout.room)
+  const { width: W, depth: D, height: H } = useStore((s) => shownLayout(s).room)
   const lines = useMemo(() => {
     const out: Pt[][] = []
     for (let x = Math.ceil(-W / 2 / GRID_STEP) * GRID_STEP; x <= W / 2 + 1e-6; x += GRID_STEP) out.push([[x, H + 0.01, -D / 2], [x, H + 0.01, D / 2]])
@@ -199,8 +199,8 @@ function Grid() {
 
 export function PlanOverlay() {
   const view = useStore((s) => s.view)
-  const room = useStore((s) => s.layout.room)
-  const openings = useStore((s) => s.layout.openings)
+  const room = useStore((s) => shownLayout(s).room)
+  const openings = useStore((s) => shownLayout(s).openings)
   const grid = useStore((s) => s.snap.grid)
   const walls = useMemo(() => roomWalls(room, openings), [room, openings])
   if (view !== 'plan') return null

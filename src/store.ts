@@ -38,6 +38,8 @@ interface State {
   myFurniture: MyFurniture[]
   /** Remplacement en cours d'aperçu (non confirmé) */
   preview: { uid: string; item: PlacedItem } | null
+  /** Aménagement complet en aperçu (proposition de l'assistant), affiché à la place de la version */
+  layoutPreview: Layout | null
 
   // Navigation et projets
   goHome: () => void
@@ -98,6 +100,12 @@ interface State {
   previewReplace: (uid: string, modelId: string) => void
   cancelPreview: () => void
   confirmReplace: () => void
+
+  // Assistant
+  ideaOpen: boolean
+  setIdeaOpen: (v: boolean) => void
+  setLayoutPreview: (l: Layout | null) => void
+  applyLayoutAsVersion: (l: Layout) => void
 
   // Mes meubles
   saveMyFurniture: (f: MyFurniture) => void
@@ -162,10 +170,13 @@ export const useStore = create<State>()((set, get) => {
     dirty: false,
     myFurniture: initialFurniture,
     preview: null,
+    layoutPreview: null,
+    ideaOpen: false,
+    setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null } : { layoutPreview: null }) }),
 
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
-      set({ screen: 'accueil', selection: null, pinnedImage: null })
+      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null })
     },
     startWizard: () => set({ screen: 'assistant' }),
 
@@ -405,7 +416,11 @@ export const useStore = create<State>()((set, get) => {
       set({ selection: null })
     },
 
-    select: (selection) => set({ selection, preview: null }),
+    // Pendant l'aperçu d'une proposition de l'assistant, la pièce est en lecture seule
+    select: (selection) => {
+      if (get().layoutPreview && selection) return
+      set({ selection, preview: null })
+    },
     setView: (view) => set({ view }),
     setDragging: (dragging) => set({ dragging }),
     setSnap: (patch) => set({ snap: { ...get().snap, ...patch } }),
@@ -428,6 +443,20 @@ export const useStore = create<State>()((set, get) => {
         l.items = l.items.map((it) => (it.uid === p.uid ? { ...p.item, status: 'a-acheter' } : it))
       })
       set({ preview: null })
+    },
+
+    setLayoutPreview: (layoutPreview) => set({ layoutPreview, selection: null, preview: null }),
+    applyLayoutAsVersion: (l) => {
+      // La version actuelle est gardée telle quelle : la proposition devient une nouvelle version
+      get().save()
+      const copy = clone(l)
+      copy.id = uid()
+      copy.updatedAt = Date.now()
+      persistProject((pp) => {
+        pp.versions.push(copy)
+        pp.activeVersionId = copy.id
+      })
+      set({ layout: copy, layoutPreview: null, past: [], future: [], selection: null, savedAt: Date.now(), dirty: false })
     },
 
     saveMyFurniture: (f) => {
@@ -477,6 +506,9 @@ export const useStore = create<State>()((set, get) => {
     },
   }
 })
+
+/** Aménagement affiché dans la 3D : l'aperçu d'une proposition s'il y en a un, sinon la version en cours. */
+export const shownLayout = (s: { layout: Layout; layoutPreview: Layout | null }) => s.layoutPreview ?? s.layout
 
 /** Projet ouvert. */
 export const useProject = () => useStore((s) => s.projects.find((p) => p.id === s.projectId) ?? null)

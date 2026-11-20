@@ -1,0 +1,21 @@
+{
+  "name": "interieur3d-relais",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "verifier": "tsc",
+    "deployer": "wrangler deploy",
+    "local": "wrangler dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.11.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261120.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.165.0"
+  },
+  "private": true,
+  "type": "module"
+}

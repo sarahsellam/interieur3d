@@ -1,0 +1,11 @@
+# Relais de Mon Intérieur 3D (Cloudflare Workers, offre gratuite)
+name = "interieur3d-relais"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ALLOWED_ORIGINS = "https://sarahsellam.github.io,http://localhost:5173"
+
+# La clé de l'API Claude n'est jamais écrite ici : c'est un secret
+# (ANTHROPIC_API_KEY), saisi dans le tableau de bord Cloudflare.

@@ -7,7 +7,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
-import { useStore, type Opening, type Room as RoomDims, type WallSide } from '../store'
+import { shownLayout, useStore, type Opening, type Room as RoomDims, type WallSide } from '../store'
 import { FLOORS, floorTexture, texture } from '../data/finishes'
 import { openingDepth } from '../model/geometry'
 import { Wall, type ArchMaterials, type WallSpec } from './architecture'
@@ -109,8 +109,8 @@ function useArchMaterials(wallColors: Record<WallSide, string>): { m: ArchMateri
 }
 
 function Floor() {
-  const room = useStore((s) => s.layout.room)
-  const floorId = useStore((s) => s.layout.floorId)
+  const room = useStore((s) => shownLayout(s).room)
+  const floorId = useStore((s) => shownLayout(s).floorId)
   const finish = FLOORS.find((f) => f.id === floorId) ?? FLOORS[0]
   const [map, normalMap, roughnessMap, aoMap] = useTexture([
     floorTexture(finish.id, 'diff'),
@@ -147,8 +147,8 @@ function Floor() {
 }
 
 function Walls({ m, wallMats }: { m: ArchMaterials; wallMats: Record<WallSide, THREE.MeshStandardMaterial> }) {
-  const room = useStore((s) => s.layout.room)
-  const openings = useStore((s) => s.layout.openings)
+  const room = useStore((s) => shownLayout(s).room)
+  const openings = useStore((s) => shownLayout(s).openings)
   const view = useStore((s) => s.view)
   const selection = useStore((s) => s.selection)
   const select = useStore((s) => s.select)
@@ -220,7 +220,7 @@ function Walls({ m, wallMats }: { m: ArchMaterials; wallMats: Record<WallSide, T
 }
 
 function Ceiling({ m }: { m: ArchMaterials }) {
-  const { width: W, depth: D, height: H } = useStore((s) => s.layout.room)
+  const { width: W, depth: D, height: H } = useStore((s) => shownLayout(s).room)
   const view = useStore((s) => s.view)
   const ref = useRef<THREE.Mesh>(null)
   useEffect(() => {
@@ -263,7 +263,7 @@ function Ground() {
 }
 
 export function Room() {
-  const wallColors = useStore((s) => s.layout.wallColors)
+  const wallColors = useStore((s) => shownLayout(s).wallColors)
   const { m, walls } = useArchMaterials(wallColors)
   return (
     <group>

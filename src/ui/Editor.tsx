@@ -11,6 +11,7 @@ import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
 import { ItemThumb, MyFurnitureSection } from './MyFurniture'
 import { ReplacePanel } from './Replace'
+import { IdeaPanel } from './Idea'
 
 const OPENING_KINDS: OpeningKind[] = ['fenetre', 'porte-fenetre', 'porte', 'placard', 'niche']
 
@@ -156,6 +157,8 @@ function TopBar() {
   const goHome = useStore((s) => s.goHome)
   const [menu, setMenu] = useState(false)
   const [flash, setFlash] = useState(false)
+  const ideaOpen = useStore((s) => s.ideaOpen)
+  const setIdeaOpen = useStore((s) => s.setIdeaOpen)
 
   useEffect(() => {
     if (!savedAt) return
@@ -194,6 +197,9 @@ function TopBar() {
         ))}
       </div>
       <div className="top-right">
+        <button type="button" className={`btn idea-btn ${ideaOpen ? 'on' : ''}`} onClick={() => setIdeaOpen(!ideaOpen)}>
+          {Icon.spark} <span className="idea-label">Demander une idée</span>
+        </button>
         <BudgetButton />
         <button type="button" className="icon-btn" onClick={undo} disabled={!canUndo} aria-label="Annuler" title="Annuler">
           {Icon.undo}
@@ -784,8 +790,11 @@ function useShortcuts() {
 
 export function EditorUI() {
   useShortcuts()
+  const ideaOpen = useStore((s) => s.ideaOpen)
+  const setIdeaOpen = useStore((s) => s.setIdeaOpen)
   return (
     <>
+      {ideaOpen && <IdeaPanel onClose={() => setIdeaOpen(false)} />}
       <TopBar />
       <SidePanel />
       <OverlapBanner />

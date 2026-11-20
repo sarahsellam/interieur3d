@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useStore } from '../store'
+import { shownLayout, useStore } from '../store'
 import { openingCenter, wallAxes } from '../model/geometry'
 
 export const EYE_HEIGHT = 1.6
@@ -15,7 +15,7 @@ const SPEED = 1.3 // m/s
 
 export function WalkControls() {
   const { camera, gl, set, invalidate } = useThree()
-  const room = useStore((s) => s.layout.room)
+  const room = useStore((s) => shownLayout(s).room)
 
   const st = useMemo(
     () => ({
@@ -40,7 +40,7 @@ export function WalkControls() {
 
   // Position de départ : sur le seuil de la porte, comme en entrant dans la pièce
   useEffect(() => {
-    const layout = useStore.getState().layout
+    const layout = shownLayout(useStore.getState())
     const door = layout.openings.find((o) => o.kind === 'porte') ?? layout.openings.find((o) => o.kind === 'porte-fenetre')
     if (door) {
       const c = openingCenter(room, door)

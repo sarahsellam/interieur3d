@@ -125,3 +125,18 @@ tabouret, la table de chevet, la commode, l'armoire et le bureau sont des modèl
 
 Les fenêtres, portes, placards, niches, plinthes et corniches sont dessinés par le code
 (fichier `src/three/architecture.tsx`).
+
+## Assistant IA et relais (dossier `relais/`)
+
+L'assistant « Demander une idée » et la lecture complète des pages produits passent par un
+petit relais hébergé gratuitement chez Cloudflare (Workers). Il garde la clé de l'API Claude
+secrète : elle n'est jamais dans l'application ni dans ce dépôt.
+
+- `relais/src/index.ts` : `POST /idee` (deux propositions d'aménagement, modèle `claude-opus-5-5`,
+  réponse au format vérifié) et `POST /produit` (lecture d'une fiche produit).
+- Seules les adresses listées dans `ALLOWED_ORIGINS` (`relais/wrangler.toml`) peuvent l'appeler.
+- La clé se saisit comme secret `ANTHROPIC_API_KEY` dans le tableau de bord Cloudflare.
+- Déploiement : `cd relais && npm install && npx wrangler deploy`.
+- L'adresse du relais est indiquée à l'application dans le fichier `.env` (`VITE_RELAIS_URL`).
+- Coût : environ 10 à 20 centimes par idée demandée, 1 à 2 centimes par lien lu.
+  Fixez un plafond de dépense mensuel dans la console Anthropic.

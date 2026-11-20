@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { assetUrl, CATEGORY_LABELS, fmtPrice, type CatalogItem, type FurnitureCategory } from '../data/catalog'
-import { readProductLink } from '../model/productLink'
+import { readProductLink, type ProductDraft } from '../model/productLink'
+import { aiReady, readProductViaRelais } from '../model/ai'
 import type { MyFurniture } from '../model/types'
 import { uid } from '../model/types'
 import { useStore } from '../store'
@@ -53,7 +54,29 @@ export function FurnitureForm({ initial, onClose }: { initial?: MyFurniture; onC
     const url = /^https?:\/\//.test(link) ? link : `https://${link}`
     setReading(true)
     setInfo(null)
-    const d = await readProductLink(url)
+    let d: ProductDraft = await readProductLink(url)
+    // Avec le relais, la page est lue côté serveur (aucune boutique ne bloque) et l'IA y trouve les dimensions
+    if (!d.fromPage && aiReady()) {
+      try {
+        const r = await readProductViaRelais(url)
+        if (r.lu) {
+          d = {
+            ...d,
+            fromPage: true,
+            name: r.nom ?? d.name,
+            imageUrl: r.image ?? d.imageUrl,
+            price: typeof r.prix === 'number' ? r.prix : d.price,
+            vendor: r.vendeur ?? d.vendor,
+            width: r.largeur ? r.largeur / 100 : d.width,
+            depth: r.profondeur ? r.profondeur / 100 : d.depth,
+            height: r.hauteur ? r.hauteur / 100 : d.height,
+            category: r.categorie ?? d.category,
+          }
+        }
+      } catch {
+        /* relais indisponible : on garde ce qui a été déduit de l'adresse */
+      }
+    }
     setReading(false)
     const filled: string[] = []
     const patch: Partial<MyFurniture> = { link: url }

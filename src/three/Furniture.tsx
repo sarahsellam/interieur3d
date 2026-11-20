@@ -4,7 +4,7 @@ import { useGLTF, Html } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { getItem, assetUrl } from '../data/catalog'
-import { useStore, type PlacedItem } from '../store'
+import { shownLayout, useStore, type PlacedItem } from '../store'
 import { itemDims, overlapsOf } from '../model/geometry'
 import type { ItemDims } from '../model/types'
 import { startDrag } from './drag'
@@ -121,7 +121,7 @@ export function Furniture({ item }: { item: PlacedItem }) {
   const c = getItem(item.modelId)!
   const dims = itemDims(item)
   const selected = useStore((s) => s.selection?.type === 'item' && s.selection.id === item.uid)
-  const overlapping = useStore((s) => overlapsOf(s.layout).some((o) => o.a.id === item.uid || o.b.id === item.uid))
+  const overlapping = useStore((s) => overlapsOf(shownLayout(s)).some((o) => o.a.id === item.uid || o.b.id === item.uid))
   const dragging = useStore((s) => s.dragging)
   const select = useStore((s) => s.select)
   const view = useStore((s) => s.view)
@@ -129,6 +129,7 @@ export function Furniture({ item }: { item: PlacedItem }) {
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.button !== undefined && e.button !== 0) return
+    if (useStore.getState().layoutPreview) return
     // À hauteur des yeux, toucher le tapis sert à marcher, pas à le sélectionner
     if (view === 'yeux' && c.floorLayer && !selected) return
     e.stopPropagation()
