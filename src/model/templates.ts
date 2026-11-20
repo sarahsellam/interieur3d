@@ -79,7 +79,7 @@ export function exampleBedroom(): Layout {
     item('coiffeuse', -0.55, -1.775, 0),
     item('tabouret', -0.55, -1.45, Math.PI),
     item('commode', 1.55, 0.75, -Math.PI / 2),
-    item('potted_plant_02', -1.5, -1.68, 0.5),
+    item('potted_plant_02', -1.43, -1.66, 0),
   ]
   return l
 }
