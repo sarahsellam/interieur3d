@@ -94,8 +94,9 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
 
 ## Étape 5 — Partage et fil d'inspiration
 - Projets privés par défaut.
-- Partage volontaire du rendu final uniquement, avec demande d'avis
-  (vote entre deux versions).
+- ✅ Partage par lien avec demande d'avis : une ou deux versions choisies, question,
+  lien sans compte (plan, 3D, hauteur des yeux, lecture seule), vote A/B, commentaire,
+  prénom facultatif ; résultats dans l'application ; arrêt du partage à tout moment.
 - Fil d'inspiration des projets publics, filtres par type de pièce, surface et budget.
 - Modération des contenus.
 

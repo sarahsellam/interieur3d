@@ -5,7 +5,7 @@ import { CUSTOM_PREFIX, getItem, registerCustomFurniture } from './data/catalog'
 import { clampOffset, clampToRoom, snapPosition } from './model/geometry'
 import { loadInspirations, loadMyFurniture, loadProjects, saveInspirations, saveMyFurniture, saveProjects, deleteImage } from './model/storage'
 import { startLayout, type StartKind } from './model/templates'
-import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ViewMode, WallSide } from './model/types'
+import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ShareRef, ViewMode, WallSide } from './model/types'
 import { uid } from './model/types'
 import { hasWebGL2 } from './ui/Fallback'
 
@@ -13,7 +13,7 @@ export type { Layout, Opening, PlacedItem, Room, ViewMode, WallSide } from './mo
 
 export const ROOM_LIMITS = { min: 1.5, max: 12, minHeight: 2.2, maxHeight: 4 }
 
-export type Screen = 'accueil' | 'assistant' | 'editeur'
+export type Screen = 'accueil' | 'assistant' | 'editeur' | 'partage'
 
 const HISTORY_MAX = 60
 
@@ -54,6 +54,14 @@ interface State {
   addReference: (ref: RefImage) => void
   removeReference: (id: string) => void
   save: (thumb?: string) => void
+  /** Liens de partage du projet ouvert */
+  addShare: (ref: ShareRef) => void
+  removeShare: (id: string) => void
+  /** Projet partagé ouvert depuis un lien (identifiant dans l'adresse) */
+  shareId: string | null
+  openShare: (id: string) => void
+  /** Affiche une version partagée, en lecture seule */
+  showSharedLayout: (l: Layout) => void
 
   // Versions
   duplicateVersion: () => void
@@ -182,6 +190,15 @@ export const useStore = create<State>()((set, get) => {
     myFurniture: initialFurniture,
     preview: null,
     layoutPreview: null,
+    shareId: null,
+    openShare: (shareId) => {
+      if (get().projectId && get().dirty) get().save()
+      clearTimeout(autosaveTimer)
+      set({ screen: 'partage', shareId, layoutPreview: null, projectId: null, dirty: false, selection: null, preview: null, ideaOpen: false, panelOpen: window.innerWidth > 860, past: [], future: [], view: get().threeD ? '3d' : 'plan' })
+    },
+    showSharedLayout: (l) => set({ layout: clone(l), layoutPreview: clone(l), selection: null }),
+    addShare: (ref) => persistProject((pp) => (pp.shares = [ref, ...(pp.shares ?? [])])),
+    removeShare: (id) => persistProject((pp) => (pp.shares = (pp.shares ?? []).filter((x) => x.id !== id))),
     ideaOpen: false,
     panelOpen: typeof window === 'undefined' || window.innerWidth > 860,
     threeD: hasWebGL2(),
@@ -196,7 +213,7 @@ export const useStore = create<State>()((set, get) => {
     },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
-      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null })
+      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null })
     },
     startWizard: () => set({ screen: 'assistant' }),
 

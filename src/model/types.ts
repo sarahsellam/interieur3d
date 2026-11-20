@@ -141,6 +141,17 @@ export interface Project {
   versions: Layout[]
   activeVersionId: string
   references: RefImage[]
+  /** Liens de partage créés pour ce projet (la clé permet de lire les avis et d'arrêter le partage) */
+  shares?: ShareRef[]
+}
+
+/** Un lien de partage envoyé à des proches */
+export interface ShareRef {
+  id: string
+  cle: string
+  createdAt: number
+  question: string
+  versionNames: string[]
 }
 
 /** Une inspiration : photo et/ou lien, avec ce qu'on aime dedans. */

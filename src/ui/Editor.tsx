@@ -7,6 +7,7 @@ import { budgetOf, itemDims, overlapsOf, wallLength } from '../model/geometry'
 import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type OpeningKind, type ViewMode, type WallSide } from '../model/types'
 import { ROOM_LIMITS, useProject, useStore } from '../store'
 import { captureThumb } from '../three/capture'
+import { SharePanel } from './Share'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
 import { ItemThumb, MyFurnitureSection } from './MyFurniture'
@@ -22,7 +23,7 @@ async function saveWithThumb() {
 
 // ---------------------------------------------------------------- Barre du haut
 
-function VersionMenu({ onClose }: { onClose: () => void }) {
+function VersionMenu({ onClose, onShare }: { onClose: () => void; onShare: () => void }) {
   const project = useProject()
   const layout = useStore((s) => s.layout)
   const switchVersion = useStore((s) => s.switchVersion)
@@ -77,6 +78,9 @@ function VersionMenu({ onClose }: { onClose: () => void }) {
         }}
       >
         {Icon.copy} Dupliquer cette version
+      </button>
+      <button type="button" className="btn secondary" onClick={onShare}>
+        {Icon.share} Demander un avis sur mes versions
       </button>
     </div>
   )
@@ -160,6 +164,7 @@ function TopBar() {
   const threeD = useStore((s) => s.threeD)
   const ideaOpen = useStore((s) => s.ideaOpen)
   const setIdeaOpen = useStore((s) => s.setIdeaOpen)
+  const [sharing, setSharing] = useState(false)
 
   useEffect(() => {
     if (!savedAt) return
@@ -188,7 +193,7 @@ function TopBar() {
             <span className="version-name">{layout.name}</span> {Icon.chevron}
           </button>
         </div>
-        {menu && <VersionMenu onClose={() => setMenu(false)} />}
+        {menu && <VersionMenu onClose={() => setMenu(false)} onShare={() => (setMenu(false), setSharing(true))} />}
       </div>
       <div className="segmented" role="tablist" aria-label="Type de vue">
         {(['plan', '3d', 'yeux'] as ViewMode[]).map((v) => (
@@ -210,6 +215,10 @@ function TopBar() {
         <button type="button" className={`btn idea-btn ${ideaOpen ? 'on' : ''}`} onClick={() => setIdeaOpen(!ideaOpen)}>
           {Icon.spark} <span className="idea-label">Demander une idée</span>
         </button>
+        <button type="button" className="btn share-btn" onClick={() => setSharing(true)} title="Partager pour demander un avis">
+          {Icon.share} <span className="share-label">Partager</span>
+        </button>
+        {sharing && <SharePanel onClose={() => setSharing(false)} beforeShare={saveWithThumb} />}
         <BudgetButton />
         <button type="button" className="icon-btn" onClick={undo} disabled={!canUndo} aria-label="Annuler" title="Annuler">
           {Icon.undo}
@@ -742,7 +751,7 @@ function No3DNotice() {
 
 const HINT_KEY = 'mi3d-aide-yeux'
 
-function EyeLevelHint() {
+export function EyeLevelHint() {
   const view = useStore((s) => s.view)
   const [seen, setSeen] = useState(() => {
     try {

@@ -110,6 +110,11 @@ export function registerCustomFurniture(list: MyFurniture[]) {
   for (const f of list) customRegistry[CUSTOM_PREFIX + f.id] = customToCatalog(f)
 }
 
+/** Meubles personnels d'un projet partagé par quelqu'un d'autre (ajoutés sans effacer les siens). */
+export function registerSharedFurniture(list: MyFurniture[]) {
+  for (const f of list) customRegistry[CUSTOM_PREFIX + f.id] = customToCatalog(f)
+}
+
 /** Fiche d'un meuble, qu'il vienne du catalogue ou de « Mes meubles ». */
 export function getItem(modelId: string): CatalogItem | undefined {
   return CATALOG_BY_ID[modelId] ?? customRegistry[modelId]

@@ -6,9 +6,14 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { z } from 'zod'
+import { Partages, type Avis } from './partages'
+
+export { Partages }
 
 export interface Env {
   ANTHROPIC_API_KEY: string
+  /** Projets partagés par lien (un Durable Object par partage) */
+  PARTAGES: DurableObjectNamespace<Partages>
   /** Origines autorisées, séparées par des virgules */
   ALLOWED_ORIGINS: string
 }
@@ -24,7 +29,7 @@ function cors(origin: string | null, env: Env) {
     ok: !!ok,
     headers: {
       'Access-Control-Allow-Origin': ok ? origin! : allowed[0],
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',
@@ -230,15 +235,97 @@ async function handleProduct(req: Request, env: Env, headers: Record<string, str
   return json({ lu: true, ...out }, 200, headers)
 }
 
+// ---------------------------------------------------------------- Partages
+
+const randomId = (n: number) => {
+  const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(n))
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
+}
+
+const shareStub = (env: Env, id: string) => env.PARTAGES.get(env.PARTAGES.idFromName(id))
+
+async function createShare(req: Request, env: Env, headers: Record<string, string>) {
+  const raw = await req.text()
+  if (raw.length > 1_500_000) return json({ erreur: 'Projet trop lourd pour être partagé.' }, 413, headers)
+  const body = (() => {
+    try {
+      return JSON.parse(raw) as { versions?: unknown[] }
+    } catch {
+      return null
+    }
+  })()
+  const nb = Array.isArray(body?.versions) ? body!.versions!.length : 0
+  if (!body || nb < 1 || nb > 2) return json({ erreur: 'Partage invalide.' }, 400, headers)
+  const id = randomId(10)
+  const cle = randomId(24)
+  await shareStub(env, id).creer({ cle, date: Date.now(), contenu: raw, nbVersions: nb })
+  return json({ id, cle }, 201, headers)
+}
+
+async function readShare(id: string, env: Env, headers: Record<string, string>, withComments: boolean) {
+  const r = await shareStub(env, id).lire()
+  if (!r) return json({ erreur: "Ce partage n'existe pas ou a été arrêté." }, 404, headers)
+  const votes = Array.from({ length: r.partage.nbVersions }, (_, i) => r.avis.filter((a) => a.version === i).length)
+  return json(
+    {
+      contenu: JSON.parse(r.partage.contenu) as unknown,
+      date: r.partage.date,
+      votes,
+      nbAvis: r.avis.length,
+      // Les commentaires sont visibles par le propriétaire (avec sa clé) et, de façon anonyme, par les votants
+      avis: withComments ? r.avis : r.avis.filter((a) => a.commentaire).map((a) => ({ ...a, prenom: a.prenom ? a.prenom.slice(0, 1) + '.' : '' })),
+    },
+    200,
+    headers,
+  )
+}
+
+async function addReview(req: Request, id: string, env: Env, headers: Record<string, string>) {
+  const b = (await req.json().catch(() => null)) as { version?: number | null; commentaire?: string; prenom?: string } | null
+  if (!b) return json({ erreur: 'Avis illisible.' }, 400, headers)
+  const avis: Avis = {
+    version: typeof b.version === 'number' ? Math.floor(b.version) : null,
+    commentaire: String(b.commentaire ?? '').trim().slice(0, 600),
+    prenom: String(b.prenom ?? '').trim().slice(0, 40),
+    date: Date.now(),
+  }
+  if (avis.version === null && !avis.commentaire) return json({ erreur: 'Choisissez une version ou écrivez un commentaire.' }, 400, headers)
+  const r = await shareStub(env, id).ajouterAvis(avis)
+  if (r === 'introuvable') return json({ erreur: "Ce partage n'existe plus." }, 404, headers)
+  if (r === 'complet') return json({ erreur: 'Ce partage a reçu le nombre maximum d’avis.' }, 409, headers)
+  if (r === 'invalide') return json({ erreur: 'Version inconnue.' }, 400, headers)
+  return json({ ok: true }, 201, headers)
+}
+
 // ---------------------------------------------------------------- Point d'entrée
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const { ok, headers } = cors(req.headers.get('Origin'), env)
     if (req.method === 'OPTIONS') return new Response(null, { status: ok ? 204 : 403, headers })
-    const path = new URL(req.url).pathname
+    const url = new URL(req.url)
+    const path = url.pathname
     if (req.method === 'GET' && path === '/') return json({ service: 'Relais Mon Intérieur 3D', ok: true }, 200, headers)
     if (!ok) return json({ erreur: 'Origine non autorisée.' }, 403, headers)
+
+    // Partages : ils ne demandent pas la clé de l'IA
+    if (req.method === 'POST' && path === '/partage') return createShare(req, env, headers)
+    const m = path.match(/^\/partage\/([a-z0-9]{10})(\/avis)?$/)
+    if (m) {
+      const id = m[1]
+      if (req.method === 'GET' && !m[2]) {
+        const cle = url.searchParams.get('cle')
+        const owner = cle ? (await shareStub(env, id).lire())?.partage.cle === cle : false
+        return readShare(id, env, headers, owner)
+      }
+      if (req.method === 'POST' && m[2]) return addReview(req, id, env, headers)
+      if (req.method === 'DELETE' && !m[2]) {
+        const done = await shareStub(env, id).supprimer(url.searchParams.get('cle') ?? '')
+        return done ? json({ ok: true }, 200, headers) : json({ erreur: 'Clé invalide.' }, 403, headers)
+      }
+    }
+
     if (!env.ANTHROPIC_API_KEY) return json({ erreur: 'Le relais n’a pas encore de clé API Claude.' }, 500, headers)
     if (req.method === 'POST' && path === '/idee') return handleIdea(req, env, headers)
     if (req.method === 'POST' && path === '/produit') return handleProduct(req, env, headers)

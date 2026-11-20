@@ -140,6 +140,10 @@ secrète : elle n'est jamais dans l'application ni dans ce dépôt.
 
 - `relais/src/index.ts` : `POST /idee` (deux propositions d'aménagement, modèle `claude-opus-5-5`,
   réponse au format vérifié) et `POST /produit` (lecture d'une fiche produit).
+- Partage par lien (`relais/src/partages.ts`, un Durable Object SQLite par partage, offre gratuite) :
+  `POST /partage` (crée le lien, renvoie un identifiant et une clé secrète), `GET /partage/:id`
+  (pièce + votes ; avec `?cle=` les prénoms complets), `POST /partage/:id/avis`, `DELETE /partage/:id?cle=`.
+  Le lien de l'application a la forme `…/interieur3d/#partage-<identifiant>`.
 - Seules les adresses listées dans `ALLOWED_ORIGINS` (`relais/wrangler.toml`) peuvent l'appeler.
 - La clé se saisit comme secret `ANTHROPIC_API_KEY` dans le tableau de bord Cloudflare.
 - Déploiement : `cd relais && npm install && npx wrangler deploy`.
