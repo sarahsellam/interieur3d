@@ -23,7 +23,28 @@ export interface PlacedItem {
   rot: number
 }
 
-export type ViewMode = '3d' | 'top'
+export type ViewMode = '3d' | 'visite' | 'top'
+
+export type WallSide = 'nord' | 'sud' | 'est' | 'ouest'
+
+/** Fenêtre ou porte posée sur un mur de la pièce. */
+export interface Opening {
+  id: string
+  kind: 'fenetre' | 'porte'
+  wall: WallSide
+  /** Position du centre le long du mur, depuis le milieu du mur (m) */
+  offset: number
+  width: number
+  height: number
+  /** Hauteur d'allège (bas de la fenêtre) */
+  sill: number
+}
+
+export const DEFAULT_OPENINGS: Opening[] = [
+  { id: 'f1', kind: 'fenetre', wall: 'ouest', offset: 0.2, width: 1.4, height: 1.55, sill: 0.8 },
+  { id: 'f2', kind: 'fenetre', wall: 'nord', offset: 1.25, width: 1.2, height: 1.55, sill: 0.8 },
+  { id: 'p1', kind: 'porte', wall: 'est', offset: 1.15, width: 0.83, height: 2.04, sill: 0 },
+]
 
 export const ROOM_LIMITS = { min: 2, max: 12, minHeight: 2.2, maxHeight: 4 }
 
@@ -83,12 +104,16 @@ const normAngle = (a: number) => {
 const DEFAULT_ROOM: Room = { width: 5, depth: 4.2, height: 2.6 }
 
 const defaultItems = (): PlacedItem[] => [
-  { uid: uid(), modelId: 'sofa_02', x: -0.6, z: 1.55, rot: Math.PI },
-  { uid: uid(), modelId: 'modern_coffee_table_01', x: -0.6, z: 0.45, rot: 0 },
-  { uid: uid(), modelId: 'mid_century_lounge_chair', x: -2.0, z: 0.1, rot: Math.PI / 2 },
-  { uid: uid(), modelId: 'modern_wooden_cabinet', x: -0.6, z: -1.82, rot: 0 },
-  { uid: uid(), modelId: 'potted_plant_02', x: 2.0, z: 1.6, rot: 0 },
-  { uid: uid(), modelId: 'wooden_display_shelves_01', x: 1.75, z: -1.88, rot: 0 },
+  { uid: uid(), modelId: 'rug_wool', x: -0.55, z: 0.45, rot: 0 },
+  { uid: uid(), modelId: 'sofa_lin', x: -0.55, z: 1.55, rot: Math.PI },
+  { uid: uid(), modelId: 'modern_coffee_table_01', x: -0.55, z: 0.4, rot: 0 },
+  { uid: uid(), modelId: 'mid_century_lounge_chair', x: -1.85, z: -0.55, rot: Math.PI / 2 - 0.45 },
+  { uid: uid(), modelId: 'modern_wooden_cabinet', x: -0.9, z: -1.83, rot: 0 },
+  { uid: uid(), modelId: 'potted_plant_02', x: -2.1, z: 1.72, rot: 0.6 },
+  { uid: uid(), modelId: 'wooden_display_shelves_01', x: 2.3, z: -0.55, rot: -Math.PI / 2 },
+  { uid: uid(), modelId: 'wooden_table_02', x: 1.15, z: -0.75, rot: 0 },
+  { uid: uid(), modelId: 'dining_chair_02', x: 1.15, z: -1.32, rot: 0 },
+  { uid: uid(), modelId: 'dining_chair_02', x: 1.15, z: -0.18, rot: Math.PI },
 ]
 
 /** Accès au stockage du navigateur protégé (navigation privée, stockage bloqué…). */
@@ -169,7 +194,7 @@ export const useStore = create<State>()(
         set({ room: DEFAULT_ROOM, wallColor: WALL_COLORS[0].hex, floorId: FLOORS[0].id, items: defaultItems(), selectedUid: null }),
     }),
     {
-      name: 'interieur3d-projet-v1',
+      name: 'interieur3d-projet-v2',
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => ({ room: s.room, wallColor: s.wallColor, floorId: s.floorId, items: s.items, view: s.view }),
     },

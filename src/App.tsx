@@ -3,7 +3,7 @@ import { Scene } from './three/Scene'
 import { ThumbScene } from './three/ThumbScene'
 import { preloadCatalog } from './three/Furniture'
 import { SidePanel } from './ui/Panels'
-import { Hint, Loader, SelectionBar, TopBar } from './ui/Overlay'
+import { Hint, Loader, SelectionBar, TopBar, VisitHint } from './ui/Overlay'
 import { CATALOG } from './data/catalog'
 
 /** Qualité graphique : réduite sur les petits téléphones pour rester fluide. */
@@ -29,6 +29,7 @@ export default function App() {
       <SidePanel />
       <SelectionBar />
       <Hint />
+      <VisitHint />
       <Loader />
     </div>
   )

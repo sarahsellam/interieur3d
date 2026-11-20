@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { CATALOG_BY_ID, assetUrl } from '../data/catalog'
 import { useStore, type PlacedItem } from '../store'
 import { startDrag } from './drag'
+import { ProceduralModel } from './procedural'
 
 /** Charge un modèle, le centre et pose sa base au sol. */
 export function useNormalizedModel(modelId: string) {
@@ -49,7 +50,7 @@ function SelectionOutline({ width, depth }: { width: number; depth: number }) {
     s.lineTo(x, y + r)
     s.quadraticCurveTo(x, y, x + r, y)
     const hole = new THREE.Path()
-    const t = 0.025
+    const t = 0.018
     hole.moveTo(x + t + r, y + t)
     hole.lineTo(x + w - t - r, y + t)
     hole.quadraticCurveTo(x + w - t, y + t, x + w - t, y + t + r)
@@ -65,31 +66,52 @@ function SelectionOutline({ width, depth }: { width: number; depth: number }) {
   return (
     <mesh rotation-x={-Math.PI / 2} position-y={0.004} renderOrder={2}>
       <shapeGeometry args={[shape, 6]} />
-      <meshBasicMaterial color="#d9772b" transparent opacity={0.95} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial color="#2f6f5e" transparent opacity={0.9} depthWrite={false} toneMapped={false} />
     </mesh>
   )
 }
 
+function ModelPrimitive({ modelId, onPointerDown }: { modelId: string; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
+  const { object } = useNormalizedModel(modelId)
+  return <primitive object={object} onPointerDown={onPointerDown} />
+}
+
+export function FurnitureShape({ modelId, onPointerDown }: { modelId: string; onPointerDown?: (e: ThreeEvent<PointerEvent>) => void }) {
+  const c = CATALOG_BY_ID[modelId]
+  const handler = onPointerDown ?? (() => {})
+  if (c.procedural) {
+    return (
+      <group onPointerDown={handler}>
+        <ProceduralModel id={modelId} />
+      </group>
+    )
+  }
+  return <ModelPrimitive modelId={modelId} onPointerDown={handler} />
+}
+
 export function Furniture({ item }: { item: PlacedItem }) {
   const c = CATALOG_BY_ID[item.modelId]
-  const { object } = useNormalizedModel(item.modelId)
   const selected = useStore((s) => s.selectedUid === item.uid)
   const dragging = useStore((s) => s.dragging)
   const select = useStore((s) => s.select)
   const controls = useThree((s) => s.controls) as { enabled: boolean } | null
 
+  const view = useStore((s) => s.view)
+
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.button !== undefined && e.button !== 0) return
+    // En visite, toucher le tapis sert à marcher, pas à le sélectionner
+    if (view === 'visite' && c.id === 'rug_wool' && !selected) return
     e.stopPropagation()
     select(item.uid)
-    // Bloque la rotation de la caméra pendant le déplacement du meuble
+    // Bloque la caméra pendant le déplacement du meuble
     if (controls) controls.enabled = false
     startDrag(item, e.ray, e.pointerId)
   }
 
   return (
     <group position={[item.x, 0, item.z]} rotation-y={item.rot}>
-      <primitive object={object} onPointerDown={onPointerDown} />
+      <FurnitureShape modelId={item.modelId} onPointerDown={onPointerDown} />
       {selected && <SelectionOutline width={c.width} depth={c.depth} />}
       {selected && !dragging && (
         <Html position={[0, c.height + 0.15, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
@@ -103,5 +125,5 @@ export function Furniture({ item }: { item: PlacedItem }) {
 }
 
 export function preloadCatalog(files: string[]) {
-  files.forEach((f) => useGLTF.preload(assetUrl(f), false, false))
+  files.filter(Boolean).forEach((f) => useGLTF.preload(assetUrl(f), false, false))
 }

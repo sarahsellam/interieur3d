@@ -3,15 +3,19 @@
 Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 (ordinateur, iPad, téléphone). Nom provisoire.
 
-## Ce que fait la version 1
+## Ce que fait l'application
 
 - Une pièce dont on règle la largeur, la longueur et la hauteur sous plafond.
 - 8 meubles réalistes (vrais modèles 3D) : canapé, fauteuil, chaise, table basse,
   table à manger, buffet bas, étagère, plante.
 - Ajouter, déplacer (au doigt ou à la souris), pivoter, dupliquer, supprimer un meuble.
-- Vue 3D (on tourne autour de la pièce) et vue du dessus (plan avec les cotes).
-- Couleur des murs et 5 revêtements de sol.
-- Éclairage réaliste : lumière d'ambiance HDRI, ombres douces, occlusion ambiante.
+- Trois vues : **Vue 3D** (maquette dont on fait le tour), **Visite** (à hauteur d'yeux,
+  on marche dans la pièce) et **Plan** (vue du dessus au style plan d'architecte, avec cotes).
+- Architecture réaliste : murs en enduit peint, fenêtres à deux battants avec vue sur un
+  jardin, porte à panneaux et chambranle, plinthes et corniches moulurées, plafond, suspension.
+- Lumière naturelle : soleil et lumière du ciel entrant par les fenêtres, ombres douces,
+  occlusion ambiante, reflets subtils.
+- Couleur des murs et 6 revêtements de sol (textures PBR complètes).
 - Le projet est gardé automatiquement dans le navigateur.
 
 ## Technologies
@@ -87,6 +91,14 @@ utilisation commerciale autorisée, sans obligation de citer l'auteur).
 | Buffet bas | Patrik Pangerl | polyhaven.com/a/modern_wooden_cabinet |
 | Étagère | James Ray Cock | polyhaven.com/a/wooden_display_shelves_01 |
 | Plante en pot | Rico Cilliers | polyhaven.com/a/potted_plant_02 |
+| Suspension | James Ray Cock | polyhaven.com/a/modern_ceiling_lamp_01 |
+| Canapé en lin | modèle maison, texture « rough_linen » | polyhaven.com/a/rough_linen |
+| Tapis en laine | modèle maison, texture « poly_wool_herringbone » | polyhaven.com/a/poly_wool_herringbone |
 
-Sols : laminate_floor_02, herringbone_parquet, dark_wooden_planks,
-smooth_concrete_floor, marble_tiles. Éclairage : HDRI « lebombo ».
+Textures (Poly Haven, CC0) : sols laminate_floor_02, herringbone_parquet,
+dark_wooden_planks, smooth_concrete_floor, large_floor_tiles_02, marble_tiles ;
+murs et plafond painted_plaster_wall. Panoramas : « lebombo » (lumière d'ambiance)
+et « residential_garden » (vue par les fenêtres).
+
+Les fenêtres, la porte, les plinthes et les corniches sont dessinées par le code
+(fichier `src/three/architecture.tsx`).

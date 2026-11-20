@@ -220,3 +220,11 @@ input[type='range'] { width: 100%; accent-color: var(--accent); height: 28px; }
 .confirm-row div { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn { border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; background: var(--surface-2); }
 .btn.danger { background: var(--danger); color: #fff; }
+
+/* Panneau replié sur tablette / ordinateur : seuls les onglets restent visibles */
+@media (min-width: 768px) {
+  .panel.closed { bottom: auto; }
+  .panel.closed .panel-body { display: none; }
+  .panel.closed .tabs { padding-bottom: 10px; }
+  .panel.closed .tabs button.active { background: transparent; color: var(--ink-2); }
+}

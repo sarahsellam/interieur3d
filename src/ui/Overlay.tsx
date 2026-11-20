@@ -34,8 +34,11 @@ export function TopBar() {
         <span className="brand-name">Mon Intérieur 3D</span>
       </div>
       <div className="segmented" role="tablist" aria-label="Type de vue">
-        <button role="tab" aria-selected={view === '3d'} className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')}>Vue 3D</button>
-        <button role="tab" aria-selected={view === 'top'} className={view === 'top' ? 'active' : ''} onClick={() => setView('top')}>Vue du dessus</button>
+        {([['3d', 'Vue 3D'], ['visite', 'Visite'], ['top', 'Plan']] as const).map(([v, label]) => (
+          <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'active' : ''} onClick={() => setView(v)}>
+            {label}
+          </button>
+        ))}
       </div>
     </header>
   )
@@ -77,6 +80,30 @@ export function SelectionBar() {
         <button className="icon-btn" onClick={() => duplicateItem(item.uid)} aria-label="Dupliquer">{Icon.copy}</button>
         <button className="icon-btn danger" onClick={() => removeItem(item.uid)} aria-label="Supprimer">{Icon.trash}</button>
       </div>
+    </div>
+  )
+}
+
+const VISIT_HINT_KEY = 'interieur3d-aide-visite'
+
+export function VisitHint() {
+  const view = useStore((s) => s.view)
+  const [seen, setSeen] = useState(() => {
+    try { return !!localStorage.getItem(VISIT_HINT_KEY) } catch { return false }
+  })
+  if (view !== 'visite' || seen) return null
+  const close = () => {
+    setSeen(true)
+    try { localStorage.setItem(VISIT_HINT_KEY, '1') } catch { /* rien */ }
+  }
+  return (
+    <div className="hint" role="note">
+      <p>
+        <strong>Vous êtes dans la pièce, à hauteur d'yeux.</strong> Glissez le doigt pour regarder autour de vous,
+        <strong> touchez le sol</strong> pour y marcher, écartez deux doigts pour avancer.
+        Sur ordinateur : flèches du clavier.
+      </p>
+      <button onClick={close}>C'est parti</button>
     </div>
   )
 }

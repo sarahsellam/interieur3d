@@ -1,5 +1,5 @@
 // Panneau latéral (tablette/ordinateur) ou feuille du bas (téléphone).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CATALOG, CATEGORY_LABELS, assetUrl, type FurnitureCategory } from '../data/catalog'
 import { FLOORS, WALL_COLORS, floorTexture } from '../data/finishes'
 import { ROOM_LIMITS, useStore } from '../store'
@@ -144,6 +144,11 @@ function RoomSettings() {
 export function SidePanel() {
   const [tab, setTab] = useState<Tab>('meubles')
   const [open, setOpen] = useState(true)
+  const view = useStore((s) => s.view)
+  // En visite, le panneau se replie pour laisser toute la place à la vue
+  useEffect(() => {
+    setOpen(view !== 'visite')
+  }, [view])
   return (
     <aside className={`panel ${open ? 'open' : 'closed'}`}>
       <div className="sheet-handle" onClick={() => setOpen((o) => !o)} role="button" aria-label={open ? 'Réduire le panneau' : 'Ouvrir le panneau'}>

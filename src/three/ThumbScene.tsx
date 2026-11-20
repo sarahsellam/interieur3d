@@ -4,10 +4,9 @@ import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { AmbientEnvironment } from './AmbientEnvironment'
 import { CATALOG_BY_ID } from '../data/catalog'
-import { useNormalizedModel } from './Furniture'
+import { FurnitureShape, useNormalizedModel } from './Furniture'
 
-function Model({ id }: { id: string }) {
-  const { object, size } = useNormalizedModel(id)
+function Framing({ size }: { size: THREE.Vector3 }) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
   useEffect(() => {
     const r = size.length() / 2
@@ -18,7 +17,30 @@ function Model({ id }: { id: string }) {
     camera.updateProjectionMatrix()
     ;(window as unknown as { thumbReady: boolean }).thumbReady = true
   }, [camera, size])
-  return <primitive object={object} />
+  return null
+}
+
+function GltfModel({ id }: { id: string }) {
+  const { object, size } = useNormalizedModel(id)
+  return (
+    <>
+      <primitive object={object} />
+      <Framing size={size} />
+    </>
+  )
+}
+
+function Model({ id }: { id: string }) {
+  const c = CATALOG_BY_ID[id]
+  if (c.procedural) {
+    return (
+      <>
+        <FurnitureShape modelId={id} />
+        <Framing size={new THREE.Vector3(c.width, Math.max(c.height, 0.6), c.depth)} />
+      </>
+    )
+  }
+  return <GltfModel id={id} />
 }
 
 export function ThumbScene({ id }: { id: string }) {
