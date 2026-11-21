@@ -164,7 +164,8 @@ function TopBar() {
   const threeD = useStore((s) => s.threeD)
   const ideaOpen = useStore((s) => s.ideaOpen)
   const setIdeaOpen = useStore((s) => s.setIdeaOpen)
-  const [sharing, setSharing] = useState(false)
+  const sharing = useStore((s) => s.shareOpen)
+  const setSharing = useStore((s) => s.setShareOpen)
 
   useEffect(() => {
     if (!savedAt) return

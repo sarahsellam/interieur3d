@@ -119,6 +119,17 @@ export function Home() {
                             </button>
                             {menuId === p.id && (
                               <div className="more-menu" role="menu">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setMenuId(null)
+                                    openProject(p.id)
+                                    useStore.getState().setShareOpen(true)
+                                  }}
+                                >
+                                  {Icon.share} Partager pour avoir un avis
+                                </button>
                                 <button type="button" role="menuitem" className="danger" onClick={() => setConfirmId(p.id)}>
                                   {Icon.trash} Supprimer le projet
                                 </button>

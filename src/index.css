@@ -632,7 +632,7 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
 
 /* ---------- Partage par lien ---------- */
 .share-btn { background: var(--white); border-color: var(--line); color: var(--ink); padding: 0 14px; }
-@media (max-width: 1250px) { .share-label { display: none; } .share-btn { padding: 0 11px; } }
+@media (max-width: 520px) { .share-label { display: none; } }
 .share-card { width: min(640px, 100%); }
 .share-create { display: grid; gap: 14px; }
 .share-create .hint-text { margin: 0; }

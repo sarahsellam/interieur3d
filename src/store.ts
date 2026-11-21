@@ -59,6 +59,9 @@ interface State {
   removeShare: (id: string) => void
   /** Projet partagé ouvert depuis un lien (identifiant dans l'adresse) */
   shareId: string | null
+  /** Fenêtre « Demander un avis » ouverte dans l'éditeur */
+  shareOpen: boolean
+  setShareOpen: (v: boolean) => void
   openShare: (id: string) => void
   /** Affiche une version partagée, en lecture seule */
   showSharedLayout: (l: Layout) => void
@@ -191,6 +194,8 @@ export const useStore = create<State>()((set, get) => {
     preview: null,
     layoutPreview: null,
     shareId: null,
+    shareOpen: false,
+    setShareOpen: (shareOpen) => set({ shareOpen }),
     openShare: (shareId) => {
       if (get().projectId && get().dirty) get().save()
       clearTimeout(autosaveTimer)
@@ -213,7 +218,7 @@ export const useStore = create<State>()((set, get) => {
     },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
-      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null })
+      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null, shareOpen: false })
     },
     startWizard: () => set({ screen: 'assistant' }),
 
