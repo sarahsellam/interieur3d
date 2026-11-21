@@ -9,6 +9,7 @@ import { SceneBoundary } from './ui/Fallback'
 import { Plan2D } from './ui/Plan2D'
 import { useStore } from './store'
 import { ShareViewer } from './ui/Share'
+import { ApartmentScreen } from './ui/Apartment'
 import { shareIdFromHash } from './model/share'
 import { OfflineBadge, UpdateBanner, requestPersistentStorage } from './ui/AppShell'
 
@@ -52,6 +53,8 @@ export default function App() {
       <OfflineBadge />
       {screenName === 'partage' && shareId ? (
         <SharedScreen key={shareId} id={shareId} quality={quality} />
+      ) : screenName === 'appartement' ? (
+        <ApartmentScreen quality={quality} />
       ) : screenName === 'accueil' ? (
         <Home />
       ) : screenName === 'assistant' ? (

@@ -727,3 +727,58 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
 }
 .share-create .share-versions { grid-template-columns: repeat(auto-fill, minmax(130px, 170px)); }
 @media (max-width: 400px) { .top-right .share-btn { display: none; } }
+
+/* ---------- Plan d'appartement ---------- */
+.plan-intro { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 14px; }
+.plan-intro .hint-text { font-size: 14px; max-width: 70ch; }
+.plan-intro .hero-actions { margin-top: 12px; }
+.plan-canvas { position: absolute; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; background: #f6f2ec; overflow: hidden; }
+.plan-canvas.tool-murs, .plan-canvas.tool-echelle { cursor: crosshair; }
+.plan-svg { display: block; }
+.plan-svg text { pointer-events: none; font-family: var(--sans); }
+.plan-svg .plan-len.halo, .plan-svg .plan-room-text text { paint-order: stroke; stroke: #fbf9f6; stroke-linejoin: round; }
+.plan-svg .plan-room-text text { stroke-width: 0.04; }
+.plan-svg .plan-len.halo { stroke-width: 0.05; }
+.plan-loupe {
+  position: absolute; width: 150px; height: 150px; border-radius: 50%; overflow: hidden; pointer-events: none;
+  border: 3px solid var(--white); box-shadow: 0 8px 26px rgba(41,35,33,.3); background: #fbf9f6; z-index: 4;
+}
+.plan-tools { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 10px 10px 8px; border-bottom: 1px solid var(--line); }
+.plan-tools .tool { min-width: 0; padding: 8px 2px; font-size: 11px; line-height: 1.15; text-align: center; }
+.plan-help { display: grid; gap: 10px; padding: 12px 0 16px; border-bottom: 1px solid var(--line); }
+.plan-help .hint-text { margin: 0; font-size: 14px; color: var(--ink); }
+.plan-status { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 13px; color: var(--danger); }
+.plan-status.ok { color: var(--green); }
+.plan-status svg { width: 16px; height: 16px; flex: none; }
+.thickness-row .chip .muted { margin-left: 4px; font-size: 11px; }
+.plan-room-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.plan-room-row .row-item { width: 100%; }
+.plan-settings { display: grid; gap: 10px; padding: 14px 0 6px; }
+.plan-settings h3 { margin: 6px 0 0; }
+.plan-settings input[type='range'] { width: 100%; accent-color: var(--bordeaux); }
+.plan-name-input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 0 12px; font-size: 16px; }
+.plan-sheet .dims-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.plan-visit-hint {
+  position: absolute; z-index: 6; left: 50%; transform: translateX(-50%); bottom: calc(18px + var(--safe-b)); max-width: min(560px, calc(100vw - 24px));
+  background: rgba(255,255,255,.94); border-radius: 999px; padding: 10px 18px; font-size: 13px; box-shadow: var(--shadow); text-align: center;
+}
+.plan-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); }
+@media (max-width: 860px) {
+  .plan-visit-hint { border-radius: 14px; }
+  .plan-panel.closed .plan-tools { padding-top: 0; }
+}
+.plan-hintbar { display: none; }
+@media (max-width: 860px) {
+  .plan-hintbar {
+    position: absolute; z-index: 6; left: 12px; right: 12px; bottom: calc(78px + var(--safe-b) + 10px);
+    display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.95); box-shadow: var(--shadow); font-size: 14px; font-weight: 500;
+  }
+  .plan-hintbar span { flex: 1; min-width: 0; }
+  .plan-panel.closed { height: calc(96px + var(--safe-b)); }
+  .plan-panel .plan-tools { padding-top: 2px; }
+  .plan-app:has(.plan-panel.closed) .selection-sheet { left: 8px; right: 8px; bottom: calc(96px + var(--safe-b) + 8px); }
+  .plan-app:has(.plan-panel.open) .selection-sheet { left: 8px; right: 8px; bottom: calc(44vh + var(--safe-b) + 8px); }
+  .plan-app .plan-hintbar { bottom: calc(96px + var(--safe-b) + 10px); }
+}
+.chip.selected .muted { color: rgba(255,255,255,.78); }

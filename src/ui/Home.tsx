@@ -10,6 +10,10 @@ import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
 import { Plan2D } from './Plan2D'
+import { PlanThumb } from './PlanDrawing'
+import { usePlanStore } from '../planStore'
+import { findFaces } from '../model/plan'
+import { ImportButton } from './common'
 
 const dateFr = (t: number) => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
 
@@ -146,6 +150,8 @@ export function Home() {
         )}
       </section>
 
+      <ApartmentPlans />
+
       <section className="home-section">
         <div className="section-head">
           <h2>Mes inspirations</h2>
@@ -158,6 +164,90 @@ export function Home() {
 
       <BackupSection />
     </div>
+  )
+}
+
+/** Plans d'appartement : importer un plan (photo ou PDF), le tracer, le visiter en 3D. */
+function ApartmentPlans() {
+  const plans = usePlanStore((s) => s.plans)
+  const [menuId, setMenuId] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const open = (id: string) => {
+    usePlanStore.getState().openPlan(id)
+    useStore.setState({ screen: 'appartement' })
+  }
+  const create = async (imageId?: string) => {
+    await usePlanStore.getState().createPlan('Mon appartement', imageId)
+    useStore.setState({ screen: 'appartement' })
+  }
+  return (
+    <section className="home-section">
+      <div className="section-head">
+        <h2>Plans d'appartement</h2>
+      </div>
+      <div className="plan-intro">
+        <p className="hint-text">
+          Importez le plan de votre logement (photo ou PDF), réglez l'échelle, tracez les murs du bout du doigt, placez portes et fenêtres, nommez les pièces. Puis visitez tout l'appartement en 3D et aménagez chaque pièce.
+        </p>
+        <div className="hero-actions">
+          <ImportButton label={<>{Icon.plan} Importer un plan</>} accept="image/*,application/pdf" className="btn primary" onImported={([f]) => create(f.id)} />
+          <button type="button" className="btn secondary" onClick={() => create()}>
+            Dessiner sans plan
+          </button>
+        </div>
+      </div>
+      {plans.length > 0 && (
+        <div className="project-grid">
+          {[...plans]
+            .sort((a, b) => b.updatedAt - a.updatedAt)
+            .map((p) => {
+              const rooms = findFaces(p).length
+              return (
+                <article key={p.id} className="project-card">
+                  <button type="button" className="project-thumb" onClick={() => open(p.id)} aria-label={`Reprendre ${p.name}`}>
+                    <PlanThumb plan={p} className="project-plan" />
+                  </button>
+                  <div className="project-body">
+                    <span className="project-name">{p.name}</span>
+                    <span className="project-meta">
+                      {rooms ? `${rooms} pièce${rooms > 1 ? 's' : ''}` : 'À tracer'} · {dateFr(p.updatedAt)}
+                    </span>
+                    {confirmId === p.id ? (
+                      <div className="confirm-inline">
+                        <span>Supprimer ce plan ?</span>
+                        <button type="button" className="chip danger" onClick={() => (usePlanStore.getState().deletePlan(p.id), setConfirmId(null), setMenuId(null))}>
+                          Supprimer
+                        </button>
+                        <button type="button" className="chip" onClick={() => (setConfirmId(null), setMenuId(null))}>
+                          Annuler
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="project-actions">
+                        <button type="button" className="btn primary" onClick={() => open(p.id)}>
+                          Reprendre
+                        </button>
+                        <div className="more">
+                          <button type="button" className="icon-btn small" onClick={() => setMenuId(menuId === p.id ? null : p.id)} aria-label={`Autres actions pour ${p.name}`} aria-expanded={menuId === p.id}>
+                            {Icon.more}
+                          </button>
+                          {menuId === p.id && (
+                            <div className="more-menu" role="menu">
+                              <button type="button" role="menuitem" className="danger" onClick={() => setConfirmId(p.id)}>
+                                {Icon.trash} Supprimer le plan
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+        </div>
+      )}
+    </section>
   )
 }
 

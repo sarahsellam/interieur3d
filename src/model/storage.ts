@@ -4,10 +4,12 @@
 // Rien ne quitte l'appareil : les projets sont privés.
 import { get, set, del } from 'idb-keyval'
 import type { Inspiration, MyFurniture, Project } from './types'
+import type { FloorPlan } from './plan'
 
 const PROJECTS_KEY = 'mi3d-projets-v1'
 const INSPI_KEY = 'mi3d-inspirations-v1'
 const FURNITURE_KEY = 'mi3d-mes-meubles-v1'
+const PLANS_KEY = 'mi3d-plans-v1'
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -33,6 +35,8 @@ export const loadInspirations = () => readJSON<Inspiration[]>(INSPI_KEY, [])
 export const saveInspirations = (i: Inspiration[]) => writeJSON(INSPI_KEY, i)
 export const loadMyFurniture = () => readJSON<MyFurniture[]>(FURNITURE_KEY, [])
 export const saveMyFurniture = (f: MyFurniture[]) => writeJSON(FURNITURE_KEY, f)
+export const loadPlans = () => readJSON<FloorPlan[]>(PLANS_KEY, [])
+export const savePlans = (p: FloorPlan[]) => writeJSON(PLANS_KEY, p)
 
 // ---------- Images ----------
 
@@ -101,4 +105,16 @@ export async function importImageFile(file: File): Promise<string> {
   const id = Math.random().toString(36).slice(2, 12)
   await putImage(id, blob)
   return id
+}
+
+/** Dimensions en pixels d'une image enregistrée. */
+export async function imageSize(id: string): Promise<{ width: number; height: number } | null> {
+  const url = await imageUrl(id)
+  if (!url) return null
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
 }

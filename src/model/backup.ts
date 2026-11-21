@@ -2,7 +2,8 @@
 // et leurs images. Sert de copie de secours et à passer de Safari à l'application installée
 // (sur iPad et iPhone, les deux ne partagent pas leurs données).
 import type { Inspiration, MyFurniture, Project } from './types'
-import { imageUrl, loadInspirations, loadMyFurniture, loadProjects, putImage, saveInspirations, saveMyFurniture, saveProjects } from './storage'
+import type { FloorPlan } from './plan'
+import { imageUrl, loadInspirations, loadMyFurniture, loadPlans, loadProjects, putImage, saveInspirations, saveMyFurniture, savePlans, saveProjects } from './storage'
 
 interface BackupFile {
   application: 'mon-interieur-3d'
@@ -11,6 +12,8 @@ interface BackupFile {
   projects: Project[]
   inspirations: Inspiration[]
   myFurniture: MyFurniture[]
+  /** Plans d'appartement (ajoutés après la première version des sauvegardes) */
+  plans?: FloorPlan[]
   /** Images en data URL, par identifiant */
   images: Record<string, string>
 }
@@ -28,7 +31,9 @@ export async function exportBackup(): Promise<{ file: File; counts: { projects: 
   const projects = loadProjects()
   const inspirations = loadInspirations()
   const myFurniture = loadMyFurniture()
+  const plans = loadPlans()
   const ids = new Set<string>()
+  plans.forEach((p) => p.image && ids.add(p.image.id))
   projects.forEach((p) => p.references.forEach((r) => ids.add(r.id)))
   inspirations.forEach((i) => i.imageId && ids.add(i.imageId))
   myFurniture.forEach((f) => f.imageId && ids.add(f.imageId))
@@ -38,7 +43,7 @@ export async function exportBackup(): Promise<{ file: File; counts: { projects: 
     if (!url) continue
     images[id] = await blobToDataUrl(await (await fetch(url)).blob())
   }
-  const data: BackupFile = { application: 'mon-interieur-3d', version: 1, date: new Date().toISOString(), projects, inspirations, myFurniture, images }
+  const data: BackupFile = { application: 'mon-interieur-3d', version: 1, date: new Date().toISOString(), projects, inspirations, myFurniture, plans, images }
   const day = new Date().toISOString().slice(0, 10)
   const file = new File([JSON.stringify(data)], `mon-interieur-3d-${day}.json`, { type: 'application/json' })
   return { file, counts: { projects: projects.length, images: Object.keys(images).length } }
@@ -83,5 +88,6 @@ export async function importBackup(file: File): Promise<{ projects: number }> {
   saveProjects(mergeById(loadProjects(), data.projects ?? [], (a, b) => a.updatedAt > b.updatedAt))
   saveInspirations(mergeById(loadInspirations(), data.inspirations ?? [], () => false))
   saveMyFurniture(mergeById(loadMyFurniture(), data.myFurniture ?? [], (a, b) => a.createdAt > b.createdAt))
+  savePlans(mergeById(loadPlans(), data.plans ?? [], (a, b) => a.updatedAt > b.updatedAt))
   return { projects: (data.projects ?? []).length }
 }

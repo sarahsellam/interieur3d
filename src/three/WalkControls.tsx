@@ -13,9 +13,20 @@ export const EYE_HEIGHT = 1.6
 const MARGIN = 0.3
 const SPEED = 1.3 // m/s
 
-export function WalkControls() {
+/** Visite d'un appartement : point de départ et déplacements autorisés (on ne traverse pas les murs). */
+export interface WalkNav {
+  start: { x: number; z: number; yaw: number }
+  /** Position atteinte en allant de « from » vers « to » (bloquée ou glissant le long des murs) */
+  move: (from: THREE.Vector3, to: THREE.Vector3) => THREE.Vector3
+  /** Ce point du sol est-il dans l'appartement ? */
+  onFloor: (x: number, z: number) => boolean
+}
+
+export function WalkControls({ nav }: { nav?: WalkNav } = {}) {
   const { camera, gl, set, invalidate } = useThree()
   const room = useStore((s) => shownLayout(s).room)
+  const navRef = useRef(nav)
+  navRef.current = nav
 
   const st = useMemo(
     () => ({
@@ -31,7 +42,15 @@ export function WalkControls() {
   const roomRef = useRef(room)
   roomRef.current = room
 
+  /** Avance de « delta » (en respectant les murs de l'appartement, ou les limites de la pièce). */
+  const moveBy = (delta: THREE.Vector3) => {
+    const next = st.pos.clone().add(delta)
+    if (navRef.current) st.pos.copy(navRef.current.move(st.pos, next))
+    else st.pos.copy(clamp(next))
+  }
+
   const clamp = (v: THREE.Vector3) => {
+    if (navRef.current) return v
     const r = roomRef.current
     v.x = Math.max(-r.width / 2 + MARGIN, Math.min(r.width / 2 - MARGIN, v.x))
     v.z = Math.max(-r.depth / 2 + MARGIN, Math.min(r.depth / 2 - MARGIN, v.z))
@@ -40,6 +59,15 @@ export function WalkControls() {
 
   // Position de départ : sur le seuil de la porte, comme en entrant dans la pièce
   useEffect(() => {
+    if (navRef.current) {
+      const s0 = navRef.current.start
+      st.pos.set(s0.x, EYE_HEIGHT, s0.z)
+      st.yaw = s0.yaw
+      st.pitch = -0.08
+      st.target = null
+      invalidate()
+      return
+    }
     const layout = shownLayout(useStore.getState())
     const door = layout.openings.find((o) => o.kind === 'porte') ?? layout.openings.find((o) => o.kind === 'porte-fenetre')
     if (door) {
@@ -102,7 +130,7 @@ export function WalkControls() {
         const delta = (d - pinch) * 0.008
         pinch = d
         const fwd = new THREE.Vector3(-Math.sin(st.yaw), 0, -Math.cos(st.yaw))
-        clamp(st.pos.addScaledVector(fwd, delta))
+        moveBy(fwd.multiplyScalar(delta))
         st.target = null
         invalidate()
       }
@@ -119,7 +147,7 @@ export function WalkControls() {
       ray.setFromCamera(ndc, camera)
       if (!ray.ray.intersectPlane(floor, hit)) return
       const r = roomRef.current
-      if (Math.abs(hit.x) > r.width / 2 || Math.abs(hit.z) > r.depth / 2) return
+      if (navRef.current ? !navRef.current.onFloor(hit.x, hit.z) : Math.abs(hit.x) > r.width / 2 || Math.abs(hit.z) > r.depth / 2) return
       // On s'arrête un peu avant le point visé
       const dir = hit.clone().sub(st.pos).setY(0)
       const len = dir.length()
@@ -130,7 +158,7 @@ export function WalkControls() {
     const wheel = (e: WheelEvent) => {
       e.preventDefault()
       const fwd = new THREE.Vector3(-Math.sin(st.yaw), 0, -Math.cos(st.yaw))
-      clamp(st.pos.addScaledVector(fwd, -e.deltaY * 0.002))
+      moveBy(fwd.multiplyScalar(-e.deltaY * 0.002))
       invalidate()
     }
     const keyDown = (e: KeyboardEvent) => {
@@ -168,7 +196,7 @@ export function WalkControls() {
     if (fwd || side) {
       const f = new THREE.Vector3(-Math.sin(st.yaw), 0, -Math.cos(st.yaw))
       const r = new THREE.Vector3(Math.cos(st.yaw), 0, -Math.sin(st.yaw))
-      clamp(st.pos.addScaledVector(f, fwd * SPEED * step).addScaledVector(r, side * SPEED * step))
+      moveBy(f.multiplyScalar(fwd * SPEED * step).addScaledVector(r, side * SPEED * step))
       st.target = null
       active = true
     }
@@ -177,7 +205,10 @@ export function WalkControls() {
       const len = d.length()
       if (len < 0.01) st.target = null
       else {
-        st.pos.addScaledVector(d.normalize(), Math.min(len, SPEED * step * (len < 0.4 ? 0.6 + len : 1)))
+        const before = st.pos.clone()
+        moveBy(d.normalize().multiplyScalar(Math.min(len, SPEED * step * (len < 0.4 ? 0.6 + len : 1))))
+        // Arrêté par un mur : on renonce à ce point
+        if (st.pos.distanceTo(before) < 1e-4) st.target = null
         active = true
       }
     }

@@ -102,7 +102,7 @@ function WallPlan({ spec, side }: { spec: WallSpec; side: keyof typeof WALL_LABE
   const { length, angle, position } = wallFrame(spec)
   const T = spec.thickness
   const y = spec.height + 0.02
-  const ext = spec.extendEnds ? T : 0
+  const ext = spec.extendEnds === true ? T : typeof spec.extendEnds === 'number' ? spec.extendEnds : 0
   const selection = useStore((s) => s.selection)
   const select = useStore((s) => s.select)
   const controls = useThree((s) => s.controls) as { enabled: boolean } | null

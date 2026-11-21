@@ -18,6 +18,8 @@ export interface WallOpening {
   sill: number
   depth: number
   hinge: 'gauche' | 'droite'
+  /** Porte dessinée grande ouverte (visite d'un appartement) */
+  open?: boolean
 }
 
 /** Ouvertures qui découpent le mur jusqu'au sol (encoche dans le contour). */
@@ -35,8 +37,10 @@ export interface WallSpec {
   thickness: number
   height: number
   openings: WallOpening[]
-  /** Prolonge le mur aux deux extrémités pour fermer les angles */
-  extendEnds?: boolean
+  /** Prolonge le mur aux deux extrémités pour fermer les angles (true : d'une épaisseur ; nombre : de cette longueur) */
+  extendEnds?: boolean | number
+  /** Mur intérieur d'appartement : plinthes et corniche des deux côtés */
+  twoSided?: boolean
 }
 
 export interface ArchMaterials {
@@ -63,7 +67,7 @@ export function wallFrame(spec: WallSpec) {
 function wallGeometry(spec: WallSpec, length: number) {
   const T = spec.thickness
   const H = spec.height
-  const ext = spec.extendEnds ? T : 0
+  const ext = spec.extendEnds === true ? T : typeof spec.extendEnds === 'number' ? spec.extendEnds : 0
   const doors = spec.openings.filter(isNotch).sort((p, q) => p.u - q.u)
   const shape = new THREE.Shape()
   shape.moveTo(-ext, 0)
@@ -229,12 +233,37 @@ function DoorUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }) 
       </group>
     )
   }
+  // Porte ouverte : le vantail pivote de 85° vers la pièce autour de ses charnières
+  const pivot = o.hinge === 'droite' ? u0 + W : u0
+  const swing = ((o.hinge === 'droite' ? 1 : -1) * 85 * Math.PI) / 180
+  const leaf = (children: React.ReactNode) =>
+    o.open ? (
+      <group position={[pivot, 0, zl]} rotation-y={swing}>
+        <group position={[-pivot, 0, -zl]}>{children}</group>
+      </group>
+    ) : (
+      children
+    )
   return (
     <group>
-      {/* Vantail */}
-      <Bar p={[o.u, (H - 0.008) / 2 + 0.006, zl]} s={[W - 0.012, H - 0.014, leafT]} mat={m.trim} r={0.004} />
-      {panel(1.12, H - 0.16)}
-      {panel(0.16, 0.98)}
+      {leaf(
+        <>
+          {/* Vantail */}
+          <Bar p={[o.u, (H - 0.008) / 2 + 0.006, zl]} s={[W - 0.012, H - 0.014, leafT]} mat={m.trim} r={0.004} />
+          {panel(1.12, H - 0.16)}
+          {panel(0.16, 0.98)}
+          {/* Béquille et rosace */}
+          <mesh position={[hx, 1.02, faceZ + 0.006]} rotation-x={Math.PI / 2} material={m.metal}>
+            <cylinderGeometry args={[0.026, 0.026, 0.012, 24]} />
+          </mesh>
+          <mesh position={[hx, 1.02, faceZ + 0.035]} rotation-x={Math.PI / 2} material={m.metal}>
+            <cylinderGeometry args={[0.009, 0.009, 0.05, 16]} />
+          </mesh>
+          <mesh position={[lever, 1.02, faceZ + 0.058]} rotation-z={Math.PI / 2} material={m.metal}>
+            <capsuleGeometry args={[0.009, 0.1, 6, 12]} />
+          </mesh>
+        </>,
+      )}
       {/* Ébrasement (habillage de l'épaisseur du mur) */}
       <Bar p={[u0 - 0.009, H / 2, -T / 2]} s={[0.018, H, T]} mat={m.trim} r={0.003} />
       <Bar p={[u0 + W + 0.009, H / 2, -T / 2]} s={[0.018, H, T]} mat={m.trim} r={0.003} />
@@ -243,16 +272,6 @@ function DoorUnit({ o, T, m }: { o: WallOpening; T: number; m: ArchMaterials }) 
       <Bar p={[u0 - aw / 2 + 0.01, (H + aw) / 2, 0.008]} s={[aw, H + aw, 0.016]} mat={m.trim} r={0.006} />
       <Bar p={[u0 + W + aw / 2 - 0.01, (H + aw) / 2, 0.008]} s={[aw, H + aw, 0.016]} mat={m.trim} r={0.006} />
       <Bar p={[o.u, H + aw / 2 - 0.01, 0.008]} s={[W + 2 * aw - 0.04, aw, 0.016]} mat={m.trim} r={0.006} />
-      {/* Béquille et rosace */}
-      <mesh position={[hx, 1.02, faceZ + 0.006]} rotation-x={Math.PI / 2} material={m.metal}>
-        <cylinderGeometry args={[0.026, 0.026, 0.012, 24]} />
-      </mesh>
-      <mesh position={[hx, 1.02, faceZ + 0.035]} rotation-x={Math.PI / 2} material={m.metal}>
-        <cylinderGeometry args={[0.009, 0.009, 0.05, 16]} />
-      </mesh>
-      <mesh position={[lever, 1.02, faceZ + 0.058]} rotation-z={Math.PI / 2} material={m.metal}>
-        <capsuleGeometry args={[0.009, 0.1, 6, 12]} />
-      </mesh>
     </group>
   )
 }
@@ -349,6 +368,13 @@ export function Wall({ spec, m, wallMat, groupRef, handlers = {} }: { spec: Wall
       )}
       <Baseboards spec={spec} length={length} mat={m.trim} />
       <Cornice length={length} height={spec.height} mat={m.ceiling} />
+      {spec.twoSided && (
+        // Autre face du mur : même finition, vue depuis la pièce voisine
+        <group position={[length, 0, -spec.thickness]} rotation-y={Math.PI}>
+          <Baseboards spec={{ ...spec, openings: spec.openings.map((o) => ({ ...o, u: length - o.u })) }} length={length} mat={m.trim} />
+          <Cornice length={length} height={spec.height} mat={m.ceiling} />
+        </group>
+      )}
       {spec.openings.map((o) => (
         <group
           key={o.id}

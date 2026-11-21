@@ -8,12 +8,13 @@ import { startLayout, type StartKind } from './model/templates'
 import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ShareRef, ViewMode, WallSide } from './model/types'
 import { uid } from './model/types'
 import { hasWebGL2 } from './ui/Fallback'
+import { usePlanStore } from './planStore'
 
 export type { Layout, Opening, PlacedItem, Room, ViewMode, WallSide } from './model/types'
 
 export const ROOM_LIMITS = { min: 1.5, max: 12, minHeight: 2.2, maxHeight: 4 }
 
-export type Screen = 'accueil' | 'assistant' | 'editeur' | 'partage'
+export type Screen = 'accueil' | 'assistant' | 'editeur' | 'partage' | 'appartement'
 
 const HISTORY_MAX = 60
 
@@ -47,7 +48,7 @@ interface State {
   /** Relit tout ce qui est enregistré dans l'appareil (après l'import d'une sauvegarde) */
   reloadFromStorage: () => void
   startWizard: () => void
-  createProject: (p: { name: string; roomType: RoomType; start: StartKind; room: Room; references: RefImage[] }) => void
+  createProject: (p: { name: string; roomType: RoomType; start: StartKind; room: Room; references: RefImage[]; openings?: Opening[] }) => void
   openProject: (id: string) => void
   deleteProject: (id: string) => void
   renameProject: (name: string) => void
@@ -215,6 +216,7 @@ export const useStore = create<State>()((set, get) => {
       const myFurniture = loadMyFurniture()
       registerCustomFurniture(myFurniture)
       set({ projects: loadProjects(), inspirations: loadInspirations(), myFurniture })
+      usePlanStore.getState().reload()
     },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
@@ -222,8 +224,10 @@ export const useStore = create<State>()((set, get) => {
     },
     startWizard: () => set({ screen: 'assistant' }),
 
-    createProject: ({ name, roomType, start, room, references }) => {
+    createProject: ({ name, roomType, start, room, references, openings }) => {
       const layout = startLayout(start, roomType, room)
+      // Pièce issue d'un plan d'appartement : ses vraies portes et fenêtres
+      if (openings) layout.openings = openings
       const project: Project = {
         id: uid(),
         name: name.trim() || 'Mon espace',

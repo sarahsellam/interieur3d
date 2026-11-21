@@ -101,10 +101,17 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
 - Modération des contenus.
 
 ## Étape 6 — Import de plan avancé
-- Calibrer l'échelle d'un plan importé (deux points + distance réelle).
-- Tracer les murs d'un appartement complet en touchant les angles, le plan restant
-  visible en arrière-plan ; nommer les pièces ; visite pièce par pièce (murs de 2,50 m).
-- Plus tard : détection automatique des murs, toujours vérifiable et corrigeable.
+- ✅ Calibrer l'échelle d'un plan importé (photo ou PDF) : deux points + longueur réelle.
+- ✅ Tracer les murs d'un appartement complet en touchant les angles, le plan restant
+  visible en arrière-plan (loupe sous le doigt, murs d'équerre, épaisseur cloison / mur / porteur).
+- ✅ Portes, fenêtres et portes-fenêtres posées sur les murs ; pièces fermées détectées
+  automatiquement avec leur surface ; nommer les pièces.
+- ✅ Vue 3D de tout l'appartement et visite à hauteur des yeux (murs de 2,50 m réglables,
+  portes ouvertes, on passe d'une pièce à l'autre).
+- ✅ « Aménager cette pièce » : la pièce devient un projet avec ses vraies dimensions,
+  portes et fenêtres (pièce non rectangulaire : aménagée dans son rectangle).
+- Plus tard : détection automatique des murs, toujours vérifiable et corrigeable ;
+  pièces non rectangulaires dans l'éditeur de pièce.
 
 ## Étape 7 — Comptes et sauvegarde en ligne
 - Compte (e-mail, Apple, Google), projets retrouvés sur tous les appareils.

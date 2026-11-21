@@ -67,6 +67,22 @@ export const Icon = {
   spark: svg(<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />),
   swap: svg(<path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />),
   euro: svg(<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5M4 10.5h9M4 13.5h9" />),
+  door: svg(<path d="M5 21h14M7 21V4h9v17M13 12.5v.5" />),
+  window: svg(
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="1.5" />
+      <path d="M12 4v16M4 12h16" />
+    </>,
+  ),
+  tag: svg(<path d="M3 12V4h8l10 10-8 8zM7.5 8.5h.01" strokeWidth="2" />),
+  pointer: svg(<path d="M5 3l14 8-6 1.5L10 19z" />),
+  target: svg(
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+    </>,
+  ),
+  plan: svg(<path d="M3 4h18v16H3zM3 12h8V4M11 16h10M15 16v4" />),
   magnet: svg(<path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4zM6 8h4M14 8h4" />),
 }
 

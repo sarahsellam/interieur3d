@@ -58,7 +58,7 @@ export function windowLights(room: RoomDims, openings: Opening[]) {
   )
 }
 
-function useArchMaterials(wallColors: Record<WallSide, string>): { m: ArchMaterials; walls: Record<WallSide, THREE.MeshStandardMaterial> } {
+export function useArchMaterials(wallColors: Record<WallSide, string>): { m: ArchMaterials; walls: Record<WallSide, THREE.MeshStandardMaterial> } {
   const [detail, nor, rough] = useTexture([texture('plaster_detail'), texture('plaster_nor'), texture('plaster_rough')])
   const mats = useMemo(() => {
     for (const t of [detail, nor, rough]) {

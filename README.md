@@ -32,6 +32,10 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
   s'affiche en haut et se met à jour à chaque remplacement.
 - **Inspirations utiles sans IA** : couleurs principales de la photo à appliquer à un mur ou à un
   meuble, idées tirées de la note (« commode en bois clair », « mur vert »…).
+- **Plans d'appartement** : importer le plan du logement (photo ou PDF), régler l'échelle,
+  tracer les murs au doigt (loupe, murs d'équerre), poser portes et fenêtres, nommer les pièces
+  (surfaces calculées), visiter tout l'appartement en 3D, puis « Aménager cette pièce ».
+- **Partage par lien** : une ou deux versions, vote A/B et commentaires, sans compte.
 - Les projets restent **privés**, enregistrés dans l'appareil (aucun compte pour l'instant).
 - **Application installable** (iPad, iPhone, Android, ordinateur) : icône, écran de démarrage,
   ouverture en plein écran, fonctionnement **hors connexion** (sauf l'assistant IA), mise à jour
@@ -91,6 +95,7 @@ src/
   three/      tout ce qui est 3D (pièce, ouvertures, meubles, caméras, lumières, déplacement)
   ui/         accueil, assistant, éditeur, inspirations
   store.ts    état de l'application, versions, annuler / rétablir
+  planStore.ts  état de l'éditeur de plan d'appartement (model/plan.ts : murs, pièces, échelle)
 ```
 
 ## Ajouter un meuble
