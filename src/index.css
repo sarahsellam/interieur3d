@@ -1012,3 +1012,12 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
   .decor-grid .textile-row:first-child { grid-row: auto; }
   .decor-pad { grid-template-columns: repeat(4, 44px); }
 }
+
+/* Projets récents et plans : une rangée que l'on fait défiler vers la droite */
+.project-grid {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 260px; grid-template-columns: none;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 14px; margin: -6px -4px 0; scrollbar-width: thin;
+}
+.project-grid > .project-card { scroll-snap-align: start; }
+@media (max-width: 520px) { .project-grid { grid-auto-columns: 78%; } }
