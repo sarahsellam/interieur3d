@@ -1,6 +1,6 @@
 // Accueil : créer un espace, retrouver ses projets récents, ses inspirations.
 // Assistant de création en trois étapes : Mon espace → Mes inspirations → Mon aménagement.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore, ROOM_LIMITS } from '../store'
 import type { RefImage, RoomType } from '../model/types'
 import { ROOM_TYPE_LABEL } from '../model/types'
@@ -10,6 +10,7 @@ import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
 import { AccountCard } from './Account'
+import { useGuide } from './Guide'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Plan2D } from './Plan2D'
 import { PlanThumb } from './PlanDrawing'
@@ -30,6 +31,8 @@ export function Home() {
   const [menuId, setMenuId] = useState<string | null>(null)
   const [showInspi, setShowInspi] = useState(false)
   const threeD = useStore((s) => s.threeD)
+  // Retour à l'accueil : le guide de prise en main s'arrête
+  useEffect(() => useGuide.getState().go(null), [])
 
   return (
     <div className="home">
@@ -54,7 +57,11 @@ export function Home() {
             <button
               type="button"
               className="btn secondary large"
-              onClick={() => createProject({ name: 'Chambre exemple', roomType: 'chambre', start: 'exemple', room: { width: 3.6, depth: 4, height: 2.5 }, references: [] })}
+              onClick={() => {
+                createProject({ name: 'Chambre exemple', roomType: 'chambre', start: 'exemple', room: { width: 3.6, depth: 4, height: 2.5 }, references: [] })
+                // Guide de prise en main en trois actions (facultatif)
+                useGuide.getState().start()
+              }}
             >
               Essayer l'exemple
             </button>

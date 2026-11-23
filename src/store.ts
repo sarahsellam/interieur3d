@@ -60,6 +60,9 @@ interface State {
   removeShare: (id: string) => void
   /** Projet partagé ouvert depuis un lien (identifiant dans l'adresse) */
   shareId: string | null
+  /** Comparatif de deux versions ouvert */
+  compareOpen: boolean
+  setCompareOpen: (v: boolean) => void
   /** Fenêtre « Demander un avis » ouverte dans l'éditeur */
   shareOpen: boolean
   setShareOpen: (v: boolean) => void
@@ -196,6 +199,8 @@ export const useStore = create<State>()((set, get) => {
     layoutPreview: null,
     shareId: null,
     shareOpen: false,
+    compareOpen: false,
+    setCompareOpen: (compareOpen) => set({ compareOpen, selection: null }),
     setShareOpen: (shareOpen) => set({ shareOpen }),
     openShare: (shareId) => {
       if (get().projectId && get().dirty) get().save()
@@ -220,7 +225,7 @@ export const useStore = create<State>()((set, get) => {
     },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
-      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null, shareOpen: false })
+      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null, shareOpen: false, compareOpen: false })
     },
     startWizard: () => set({ screen: 'assistant' }),
 

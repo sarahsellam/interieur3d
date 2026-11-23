@@ -115,14 +115,21 @@ function ItemShape({ it, selected, overlapping, labels }: { it: PlacedItem; sele
   const base = rugLike ? '#e4dccf' : c?.material === 'vegetal' ? '#9db08a' : CATEGORY_FILL[c?.category === 'deco' ? 'assise' : c?.category ?? 'assise']
   const fill = it.color ?? c?.color ?? base
   const deg = (-it.rot * 180) / Math.PI
+  // Nom court (avant la virgule), à une taille qui tient dans la longueur disponible du meuble
+  const label = useMemo(() => {
+    const text = (c?.name ?? '').split(',')[0].trim()
+    const quarter = Math.round(((((it.rot % Math.PI) + Math.PI) % Math.PI) / (Math.PI / 2))) % 2 === 1
+    const room = (quarter ? d.depth : d.width) * 0.9
+    return { text, size: Math.min(0.13, room / Math.max(1, text.length * 0.64)) }
+  }, [c?.name, it.rot, d.width, d.depth])
   const r = Math.min(0.05, d.width / 6, d.depth / 6)
   return (
     <g transform={`translate(${it.x} ${it.z}) rotate(${deg})`}>
       <rect x={-d.width / 2} y={-d.depth / 2} width={d.width} height={d.depth} rx={r} fill={fill} fillOpacity={rugLike ? 0.55 : 0.95} stroke={overlapping ? '#c0392b' : selected ? BORD : 'rgba(41,35,33,.45)'} strokeWidth={selected || overlapping ? 0.035 : 0.012} />
       {!rugLike && <line x1={-d.width / 2 + r} y1={d.depth / 2 - 0.02} x2={d.width / 2 - r} y2={d.depth / 2 - 0.02} stroke="rgba(41,35,33,.55)" strokeWidth={0.025} />}
-      {labels && !rugLike && d.width > 0.35 && (
-        <text x={0} y={0.04} textAnchor="middle" fontSize={Math.min(0.13, d.width / 7)} fill={INK} transform={`rotate(${-deg})`} style={{ pointerEvents: 'none', fontFamily: 'Inter, sans-serif' }}>
-          {c?.name}
+      {labels && !rugLike && label.size >= 0.05 && (
+        <text x={0} y={0.04} textAnchor="middle" fontSize={label.size} fill={INK} transform={`rotate(${-deg})`} style={{ pointerEvents: 'none', fontFamily: 'Inter, sans-serif' }}>
+          {label.text}
         </text>
       )}
     </g>

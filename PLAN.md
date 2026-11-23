@@ -131,8 +131,13 @@ autre couleur et voir la différence entre deux versions.
     même sous-type proposé en premier, meubles sans prix affichables malgré le filtre,
     nouveaux modèles 3D (plantes, chevet, tabouret), « Ajouter mon propre lien » dans la fenêtre,
     essai à la même place, contrôle de l'espace, confirmation, budget mis à jour.
-- Lot B : comparatif A/B dans le projet (même cadrage, total « À acheter » de chaque version) ;
-  guide de prise en main en trois actions ; nom complet du meuble dans sa fiche.
+- Lot B
+  - ✅ Comparatif avant / après dans le projet : deux versions au choix, rendues sous le même angle
+    (ou en plan sans 3D), total « À acheter » de chacune, liste de ce qui change, « Changer l'angle
+    de vue », « Ouvrir cette version » ; côte à côte sur grand écran, bascule A / B sur téléphone.
+  - ✅ Guide de prise en main après « Essayer l'exemple » : déplacer un meuble, changer la couleur
+    d'un mur (sur une copie), comparer ; repère animé sur la cible ; chaque étape peut être passée.
+  - ✅ Nom complet du meuble dans sa fiche (avec vendeur et lien), noms du plan ajustés à la place.
 - Lot C : mesures de passage entre meubles et zones d'ouverture (portes, tiroirs) ;
   couleur prise sur une photo d'inspiration et essayée sur un mur.
 

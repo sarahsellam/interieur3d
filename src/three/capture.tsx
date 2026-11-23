@@ -2,13 +2,15 @@
 import { useFrame, useThree } from '@react-three/fiber'
 
 let pending: ((url: string) => void) | null = null
+let pendingWidth = 360
 let requestRender: (() => void) | null = null
 
 /** Demande une vignette JPEG (≈ 360 px de large) de ce qui est affiché. */
-export function captureThumb(): Promise<string> {
+export function captureThumb(width = 360): Promise<string> {
   return new Promise((resolve) => {
     if (!requestRender) return resolve('')
     pending = resolve
+    pendingWidth = width
     requestRender()
     // Sécurité : si aucune image n'arrive, on n'attend pas indéfiniment
     setTimeout(() => {
@@ -16,7 +18,7 @@ export function captureThumb(): Promise<string> {
         pending = null
         resolve('')
       }
-    }, 1500)
+    }, 6000)
   })
 }
 
@@ -28,7 +30,7 @@ export function CaptureHelper() {
   useFrame(() => {
     if (!pending) return
     const src = gl.domElement
-    const w = 360
+    const w = Math.min(pendingWidth, src.width)
     const h = Math.round((src.height / src.width) * w)
     const c = document.createElement('canvas')
     c.width = w
@@ -37,7 +39,7 @@ export function CaptureHelper() {
     const done = pending
     pending = null
     try {
-      done(c.toDataURL('image/jpeg', 0.72))
+      done(c.toDataURL('image/jpeg', pendingWidth > 400 ? 0.85 : 0.72))
     } catch {
       done('')
     }

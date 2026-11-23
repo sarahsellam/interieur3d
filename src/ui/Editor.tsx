@@ -8,6 +8,8 @@ import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type O
 import { ROOM_LIMITS, useProject, useStore } from '../store'
 import { captureThumb } from '../three/capture'
 import { SharePanel } from './Share'
+import { CompareButton, ComparePanel } from './Compare'
+import { Guide } from './Guide'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
@@ -80,6 +82,18 @@ function VersionMenu({ onClose, onShare }: { onClose: () => void; onShare: () =>
       >
         {Icon.copy} Dupliquer cette version
       </button>
+      {project.versions.length > 1 && (
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => {
+            onClose()
+            useStore.getState().setCompareOpen(true)
+          }}
+        >
+          {Icon.swap} Comparer deux versions
+        </button>
+      )}
       <button type="button" className="btn secondary" onClick={onShare}>
         {Icon.share} Demander un avis sur mes versions
       </button>
@@ -196,6 +210,7 @@ function TopBar() {
           </button>
         </div>
         {menu && <VersionMenu onClose={() => setMenu(false)} onShare={() => (setMenu(false), setSharing(true))} />}
+        <CompareButton />
       </div>
       <div className="segmented" role="tablist" aria-label="Type de vue">
         {(['plan', '3d', 'yeux'] as ViewMode[]).map((v) => (
@@ -456,10 +471,20 @@ function ItemControls({ id }: { id: string }) {
     <>
       <div className="sheet-head">
         <div>
-          <strong>{c.name}</strong>
+          <strong className="item-name">{c.name}</strong>
           <span className="muted">
             {Math.round(d.width * 100)} × {Math.round(d.depth * 100)} × {Math.round(d.height * 100)} cm · {deg}°{locked ? ' · verrouillé' : ''}
           </span>
+          {(c.reference || c.custom) && (c.vendor || c.link) && (
+            <span className="item-source">
+              {c.vendor}
+              {c.link && (
+                <a href={c.link} target="_blank" rel="noreferrer">
+                  {Icon.link} Voir le produit
+                </a>
+              )}
+            </span>
+          )}
         </div>
         <button type="button" className="icon-btn small" onClick={() => select(null)} aria-label="Fermer">
           {Icon.close}
@@ -847,6 +872,8 @@ export function EditorUI() {
       <PinnedImage />
       <SelectionSheet />
       <EyeLevelHint />
+      <ComparePanel />
+      <Guide />
     </>
   )
 }

@@ -14,6 +14,7 @@ import { DragController } from './drag'
 import { WalkControls } from './WalkControls'
 import { PlanOverlay } from './PlanOverlay'
 import { CaptureHelper } from './capture'
+import { GuideProbe } from './GuideProbe'
 import { CEILING_LAMP, assetUrl } from '../data/catalog'
 
 /** Lumière naturelle : soleil et ciel entrant par les fenêtres, ambiance douce. */
@@ -269,6 +270,7 @@ export function Scene({ quality, video }: { quality: 'high' | 'low'; video?: boo
       <DragController />
       <Effects quality={quality} />
       <CaptureHelper />
+      <GuideProbe />
     </Canvas>
   )
 }
