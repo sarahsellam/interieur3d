@@ -1,7 +1,7 @@
 // Assistant « Demander une idée » : préparation de la demande envoyée au relais,
 // puis conversion et vérification des propositions reçues.
 // L'IA propose ; l'application vérifie tout (meubles verrouillés, dimensions, chevauchements).
-import { CATALOG, getItem, itemPrice } from '../data/catalog'
+import { CATALOG, REFERENCE_ITEMS, getItem, itemPrice } from '../data/catalog'
 import { FLOORS } from '../data/finishes'
 import { clampToRoom, findOverlaps, itemDims, openingCenter, openingDepth, wallAxes, wallLength } from './geometry'
 import { imageUrl } from './storage'
@@ -59,7 +59,8 @@ export function roomForAI(layout: Layout, myFurniture: MyFurniture[]) {
         statut: it.status === 'a-acheter' ? 'à acheter' : 'déjà possédé',
       }
     }),
-    catalogue: [...myFurniture.map(customToCatalog), ...CATALOG].map((c) => ({
+    // Vraies références du commerce (prix relevés) incluses : l'assistant peut proposer des achats réels
+    catalogue: [...myFurniture.map(customToCatalog), ...REFERENCE_ITEMS, ...CATALOG].map((c) => ({
       modelId: c.id,
       nom: c.name,
       categorie: c.category,

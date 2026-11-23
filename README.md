@@ -25,6 +25,10 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
   sont déduits de l'adresse ; la lecture complète de la page viendra avec le relais de l'étape IA),
   formulaire à vérifier (photo de la galerie, prix, dimensions, vendeur, lien). Sans modèle 3D
   exact, le meuble apparaît sous une forme simplifiée à ses vraies dimensions (signalée « 3D simplifiée »).
+- **Vraies références** (`src/data/references.ts`) : produits du commerce relevés sur la page du
+  vendeur (prix, dimensions, lien, date), dessinés en 3D avec le modèle le plus proche du catalogue.
+- **Visite vidéo** de la chambre exemple (`public/accueil/visite.mp4`), tournée avec le moteur 3D
+  de l'application (mode `?video`, caméra pilotée image par image par un script).
 - **Remplacer** un meuble : propositions du même type qui tiennent dans l'espace, filtre de budget
   (raccourcis ou fourchette), fiche prix / dimensions / vendeur / lien, aperçu dans la pièce avant
   de confirmer, alerte si la place manque.

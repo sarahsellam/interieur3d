@@ -60,6 +60,8 @@ export default function App() {
   if (thumb) return <ThumbScene id={thumb} />
   // Mode spécial (?vitrine) : rendu plein écran de la chambre d'exemple, pour l'image de l'accueil
   if (new URLSearchParams(location.search).has('vitrine')) return <Vitrine />
+  // Mode spécial (?video) : tournage de la vidéo de visite (caméra pilotée par le script d'enregistrement)
+  if (new URLSearchParams(location.search).has('video')) return <VideoStudio />
   return (
     <>
       <UpdateBanner />
@@ -124,6 +126,20 @@ function SharedScreen({ id, quality }: { id: string; quality: 'high' | 'low' }) 
         ))}
       <ShareViewer id={id} />
       {ready && threeD && <Loader />}
+    </div>
+  )
+}
+
+function VideoStudio() {
+  useMemo(() => {
+    useStore.setState({ view: '3d' })
+    ;(window as unknown as { __setView: (v: string) => void }).__setView = (v) => useStore.setState({ view: v as '3d' | 'yeux' })
+  }, [])
+  return (
+    <div className="app">
+      <div className="viewport">
+        <Scene quality="high" video />
+      </div>
     </div>
   )
 }

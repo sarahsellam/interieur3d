@@ -121,6 +121,21 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
 - Export en image et en plan PDF.
 - Mentions légales, confidentialité, RGPD.
 
+## Parcours utilisateur (retours de test de novembre 2026)
+Objectif : en moins de deux minutes dans la chambre exemple, déplacer un meuble, essayer une
+autre couleur et voir la différence entre deux versions.
+- Lot A
+  - ✅ 3D indisponible : message clair (causes possibles sur iPad / iPhone), plan 2D utilisable,
+    visite vidéo de la chambre exemple depuis l'accueil et depuis l'éditeur.
+  - ✅ Remplacer : vraies références du commerce (prix relevés, dimensions, lien, date du relevé),
+    même sous-type proposé en premier, meubles sans prix affichables malgré le filtre,
+    nouveaux modèles 3D (plantes, chevet, tabouret), « Ajouter mon propre lien » dans la fenêtre,
+    essai à la même place, contrôle de l'espace, confirmation, budget mis à jour.
+- Lot B : comparatif A/B dans le projet (même cadrage, total « À acheter » de chaque version) ;
+  guide de prise en main en trois actions ; nom complet du meuble dans sa fiche.
+- Lot C : mesures de passage entre meubles et zones d'ouverture (portes, tiroirs) ;
+  couleur prise sur une photo d'inspiration et essayée sur un mur.
+
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.

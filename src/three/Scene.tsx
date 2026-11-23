@@ -104,7 +104,29 @@ function CeilingLamp() {
   return <primitive object={obj} position={[0, H, 0]} />
 }
 
-function CameraRig() {
+/** Tournage de la vidéo de visite : la caméra est placée image par image par le script d'enregistrement. */
+function VideoDriver() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
+  const invalidate = useThree((s) => s.invalidate)
+  useEffect(() => {
+    const w = window as unknown as { __pose?: (p: number[], t: number[], fov?: number) => void }
+    w.__pose = (p, t, fov) => {
+      camera.position.set(p[0], p[1], p[2])
+      camera.lookAt(t[0], t[1], t[2])
+      if (fov) {
+        camera.fov = fov
+        camera.updateProjectionMatrix()
+      }
+      invalidate()
+    }
+    return () => {
+      delete w.__pose
+    }
+  }, [camera, invalidate])
+  return null
+}
+
+function CameraRig({ video }: { video?: boolean }) {
   const view = useStore((s) => s.view)
   const { width: W, depth: D } = useStore((s) => shownLayout(s).room)
   const ideaOpen = useStore((s) => s.ideaOpen)
@@ -134,6 +156,14 @@ function CameraRig() {
   const topZoom = frame.zoom
 
   useEffect(() => invalidate(), [view, topZoom, invalidate])
+
+  if (video)
+    return (
+      <>
+        <PerspectiveCamera makeDefault fov={55} near={0.03} far={200} position={[5, 5, 5]} />
+        <VideoDriver />
+      </>
+    )
 
   // En mode portrait (téléphone), on recule pour voir toute la pièce
   const aspect = size.width / size.height
@@ -214,7 +244,7 @@ function Effects({ quality }: { quality: 'high' | 'low' }) {
   )
 }
 
-export function Scene({ quality }: { quality: 'high' | 'low' }) {
+export function Scene({ quality, video }: { quality: 'high' | 'low'; video?: boolean }) {
   const select = useStore((s) => s.select)
   return (
     <Canvas
@@ -227,7 +257,7 @@ export function Scene({ quality }: { quality: 'high' | 'low' }) {
     >
       <color attach="background" args={['#ebe5dc']} />
       <SoftShadows size={22} samples={quality === 'high' ? 14 : 7} focus={0.5} />
-      <CameraRig />
+      <CameraRig video={video} />
       <Lights quality={quality} />
       <Suspense fallback={null}>
         <AmbientEnvironment intensity={0.5} />

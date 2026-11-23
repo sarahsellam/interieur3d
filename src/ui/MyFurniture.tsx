@@ -12,6 +12,7 @@ import { Icon, ImportButton, MeasureField, StoredImage } from './common'
 
 /** Vignette d'un meuble : photo du produit pour « Mes meubles », rendu 3D pour le catalogue. */
 export function ItemThumb({ c, className }: { c: CatalogItem; className?: string }) {
+  if (c.reference && c.imageUrl) return <RefPhoto c={c} className={className} />
   if (c.custom) {
     if (c.imageId) return <StoredImage id={c.imageId} className={className} />
     if (c.imageUrl) return <img src={c.imageUrl} alt="" className={className} loading="lazy" referrerPolicy="no-referrer" draggable={false} />
@@ -21,7 +22,14 @@ export function ItemThumb({ c, className }: { c: CatalogItem; className?: string
       </span>
     )
   }
-  return <img src={assetUrl(`thumbs/${c.id}.webp`)} alt="" className={className} loading="lazy" draggable={false} />
+  return <img src={assetUrl(`thumbs/${c.base ?? c.id}.webp`)} alt="" className={className} loading="lazy" draggable={false} />
+}
+
+/** Photo du produit (site du vendeur) ; à défaut, rendu du modèle 3D utilisé. */
+function RefPhoto({ c, className }: { c: CatalogItem; className?: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <img src={assetUrl(`thumbs/${c.base ?? c.id}.webp`)} alt="" className={className} loading="lazy" draggable={false} />
+  return <img src={c.imageUrl} alt="" className={`${className ?? ''} ref-photo`} loading="lazy" referrerPolicy="no-referrer" draggable={false} onError={() => setFailed(true)} />
 }
 
 const FURNI_COLORS = ['#d8cdb9', '#efebe4', '#b9b6b0', '#55524e', '#a3ad94', '#3e4a5c', '#b9765a', '#ddb8b0', '#c49a6c', '#7a5338']
@@ -41,9 +49,9 @@ const emptyDraft = (): MyFurniture => ({
   createdAt: Date.now(),
 })
 
-export function FurnitureForm({ initial, onClose }: { initial?: MyFurniture; onClose: (saved?: MyFurniture) => void }) {
+export function FurnitureForm({ initial, preset, onClose }: { initial?: MyFurniture; preset?: Partial<MyFurniture>; onClose: (saved?: MyFurniture) => void }) {
   const save = useStore((s) => s.saveMyFurniture)
-  const [f, setF] = useState<MyFurniture>(initial ?? emptyDraft())
+  const [f, setF] = useState<MyFurniture>(initial ?? { ...emptyDraft(), ...preset })
   const [reading, setReading] = useState(false)
   const [info, setInfo] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null)
   const set = (patch: Partial<MyFurniture>) => setF((x) => ({ ...x, ...patch }))

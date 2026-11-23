@@ -10,6 +10,7 @@ import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
 import { AccountCard } from './Account'
+import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Plan2D } from './Plan2D'
 import { PlanThumb } from './PlanDrawing'
 import { usePlanStore } from '../planStore'
@@ -57,8 +58,14 @@ export function Home() {
             >
               Essayer l'exemple
             </button>
+            <VisitVideoButton />
           </div>
-          {!threeD && <p className="hint-text hero-note">Sur ce navigateur, la 3D n'est pas disponible : vous travaillerez sur le plan, qui reste entièrement utilisable.</p>}
+          {!threeD && (
+            <div className="hint-text hero-note">
+              Sur ce navigateur, la 3D n'est pas disponible : vous travaillerez sur le plan, qui reste entièrement utilisable, et la visite en vidéo montre le rendu 3D.
+              <No3DCauses />
+            </div>
+          )}
         </div>
         <figure className="hero-visual">
           <img

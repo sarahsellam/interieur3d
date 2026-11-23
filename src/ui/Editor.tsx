@@ -8,6 +8,7 @@ import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type O
 import { ROOM_LIMITS, useProject, useStore } from '../store'
 import { captureThumb } from '../three/capture'
 import { SharePanel } from './Share'
+import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
 import { ItemThumb, MyFurnitureSection } from './MyFurniture'
@@ -741,7 +742,11 @@ function No3DNotice() {
   return (
     <div className="no3d-notice" role="status">
       <span>
-        <strong>La 3D n'est pas disponible sur ce navigateur.</strong> Le plan reste entièrement utilisable : touchez un meuble pour le déplacer, le tourner ou le remplacer.
+        <strong>3D indisponible sur ce navigateur.</strong> Le plan reste utilisable : touchez un meuble pour le déplacer ou le remplacer.
+        <span className="no3d-links">
+          <VisitVideoButton className="chip" label="Voir la visite en vidéo" />
+          <No3DCauses />
+        </span>
       </span>
       <button type="button" className="icon-btn small" onClick={() => setHidden(true)} aria-label="Masquer">
         {Icon.close}

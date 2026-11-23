@@ -97,7 +97,8 @@ function ModelPrimitive({ modelId, dims, color, onPointerDown }: { modelId: stri
     }
   }, [color, originals])
   return (
-    <group scale={[dims.width / c.width, dims.height / c.height, dims.depth / c.depth]}>
+    // Une référence du commerce utilise un modèle d'une autre taille : on le met à ses vraies dimensions
+    <group scale={[dims.width / (c.modelDims ?? c).width, dims.height / (c.modelDims ?? c).height, dims.depth / (c.modelDims ?? c).depth]}>
       <primitive object={object} onPointerDown={onPointerDown} />
     </group>
   )
@@ -110,7 +111,7 @@ export function FurnitureShape({ modelId, dims, color, onPointerDown }: { modelI
   if (c.procedural) {
     return (
       <group onPointerDown={handler}>
-        <ProceduralModel id={modelId} dims={d} color={color ?? null} />
+        <ProceduralModel id={modelId} dims={d} color={color ?? c.color ?? null} />
       </group>
     )
   }

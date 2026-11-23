@@ -560,3 +560,6 @@ export const shownLayout = (s: { layout: Layout; layoutPreview: Layout | null })
 export const useProject = () => useStore((s) => s.projects.find((p) => p.id === s.projectId) ?? null)
 
 export const catalogOf = (it: PlacedItem) => getItem(it.modelId)
+
+// Aide aux tests automatiques (version de développement uniquement)
+if (import.meta.env.DEV) (window as unknown as { __store: typeof useStore }).__store = useStore

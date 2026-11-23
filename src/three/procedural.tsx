@@ -229,6 +229,8 @@ function DressingTable({ dims, color }: P) {
   const brass = useMetal()
   const mirror = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dfe6e8', metalness: 1, roughness: 0.03, envMapIntensity: 1.3 }), [])
   const { width: W, depth: D, height: H } = dims
+  // Coiffeuse basse (sans miroir) : simple table à tiroir
+  if (H < 1.05) return <TableWithDrawer W={W} D={D} topY={H} wood={wood} brass={brass} />
   const topY = Math.min(0.76, H * 0.55)
   const mw = Math.min(0.62, W * 0.62)
   const mh = Math.max(0.3, H - topY - 0.04)
@@ -330,7 +332,8 @@ export function ProceduralModel({ id, dims, color }: { id: string } & P) {
     const c = getItem(id)
     return <SimplifiedFurniture dims={dims} color={color ?? c?.color ?? null} category={c?.category ?? 'rangement'} />
   }
-  switch (id) {
+  // Une référence du commerce est dessinée avec le meuble du catalogue qui lui ressemble
+  switch (getItem(id)?.base ?? id) {
     case 'sofa_lin':
       return <LinenSofa dims={dims} color={color} />
     case 'rug_wool':

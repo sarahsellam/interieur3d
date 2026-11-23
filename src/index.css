@@ -812,3 +812,23 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
   .account-text h2 { font-size: 23px; }
 }
 .account-card .more-menu { top: calc(100% + 6px); bottom: auto; left: 0; right: auto; min-width: 290px; }
+
+/* ---------- Visite vidéo, 3D indisponible ---------- */
+.video-modal { background: rgba(41,35,33,.55); }
+.video-card { width: min(980px, 100%); background: var(--white); border-radius: 18px; padding: 16px; display: grid; gap: 12px; box-shadow: 0 20px 60px rgba(41,35,33,.3); }
+.video-card h2 { font-size: 26px; margin: 0; }
+.video-card video { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: #ebe5dc; display: block; }
+.video-card .hint-text { margin: 0; }
+.no3d-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+.no3d-causes summary { cursor: pointer; color: var(--bordeaux); font-weight: 600; font-size: 13px; }
+.no3d-causes p { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 60ch; }
+.hero-note .no3d-causes { margin-top: 6px; }
+.proposals-title { margin: 4px 0 -2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.proposal.is-ref .proposal-img.ref-photo { object-fit: contain; background: #fff; }
+.add-own { justify-self: start; }
+.no-price { margin: 0; }
+/* Les champs de mesure placés dans un champ de formulaire gardent leur style compact */
+.field .measure-box input[type='text'] { width: 64px; min-height: 0; padding: 0 2px; border: 0; background: transparent; }
+.budget-btn strong { white-space: nowrap; }
+/* Téléphone sans 3D : les boutons d'alignement restent en bas (pas étirés entre l'avis et le panneau) */
+@media (max-width: 860px) { .app:has(.no3d-notice) .snap-chips { top: auto; } }

@@ -67,6 +67,7 @@ export const Icon = {
   spark: svg(<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />),
   swap: svg(<path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />),
   euro: svg(<path d="M17 6.5A6.5 6.5 0 1 0 17 17.5M4 10.5h9M4 13.5h9" />),
+  play: svg(<path d="M8 5.5v13l10.5-6.5z" />),
   door: svg(<path d="M5 21h14M7 21V4h9v17M13 12.5v.5" />),
   window: svg(
     <>
