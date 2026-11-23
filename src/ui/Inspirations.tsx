@@ -9,6 +9,7 @@ import { imageUrl } from '../model/storage'
 import { extractPalette, suggestFromNote, type Suggestion } from '../model/inspiration'
 import { getItem, ITEM_COLORS } from '../data/catalog'
 import { Icon, ImportButton, StoredImage } from './common'
+import { PhotoColorPicker } from './ColorPicker'
 
 /** Choix de la cible d'une couleur : un mur, tous les murs ou le meuble sélectionné. */
 function ColorApply({ hex, onDone }: { hex: string; onDone: () => void }) {
@@ -116,6 +117,7 @@ export function InspirationBoard({ allowPin = false }: { allowPin?: boolean }) {
   const pin = useStore((s) => s.pinImage)
   const [link, setLink] = useState('')
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [picking, setPicking] = useState<string | null>(null)
 
   const addLink = () => {
     const url = link.trim()
@@ -161,7 +163,15 @@ export function InspirationBoard({ allowPin = false }: { allowPin?: boolean }) {
         {inspirations.map((i) => (
           <article key={i.id} className={`inspi-card ${pinned && pinned === i.imageId ? 'pinned' : ''}`}>
             {i.imageId ? (
-              <StoredImage id={i.imageId} className="inspi-img" />
+              allowPin ? (
+                // Dans la pièce : toucher la photo ouvre la pipette
+                <button type="button" className="inspi-img-btn" onClick={() => setPicking(i.imageId!)} aria-label="Prendre une couleur sur cette photo">
+                  <StoredImage id={i.imageId} className="inspi-img" />
+                  <span className="inspi-picker-badge">{Icon.palette} Prendre une couleur</span>
+                </button>
+              ) : (
+                <StoredImage id={i.imageId} className="inspi-img" />
+              )
             ) : (
               <a className="inspi-link" href={i.link} target="_blank" rel="noreferrer">
                 {Icon.link}
@@ -200,6 +210,7 @@ export function InspirationBoard({ allowPin = false }: { allowPin?: boolean }) {
           </article>
         ))}
       </div>
+      {picking && <PhotoColorPicker imageId={picking} onClose={() => setPicking(null)} />}
     </div>
   )
 }

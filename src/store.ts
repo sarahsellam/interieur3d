@@ -60,6 +60,9 @@ interface State {
   removeShare: (id: string) => void
   /** Projet partagé ouvert depuis un lien (identifiant dans l'adresse) */
   shareId: string | null
+  /** Mesures de passage et zones d'ouverture affichées */
+  passages: boolean
+  setPassages: (v: boolean) => void
   /** Comparatif de deux versions ouvert */
   compareOpen: boolean
   setCompareOpen: (v: boolean) => void
@@ -200,6 +203,8 @@ export const useStore = create<State>()((set, get) => {
     shareId: null,
     shareOpen: false,
     compareOpen: false,
+    passages: false,
+    setPassages: (passages) => set({ passages }),
     setCompareOpen: (compareOpen) => set({ compareOpen, selection: null }),
     setShareOpen: (shareOpen) => set({ shareOpen }),
     openShare: (shareId) => {

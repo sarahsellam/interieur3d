@@ -930,3 +930,60 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
   .app:has(.selection-sheet) .guide-card > p:not(.guide-progress), .app:has(.selection-sheet) .guide-dots, .app:has(.selection-sheet) .guide-actions { display: none; }
   .app:has(.guide-card) .no3d-notice { display: none; }
 }
+
+/* ---------- Passages ---------- */
+.gap-tag { padding: 2px 8px; border-radius: 999px; font: 700 12px/1.4 var(--sans); color: #fff; white-space: nowrap; box-shadow: 0 2px 6px rgba(41,35,33,.25); }
+.gap-tag.etroit { background: #b23b2e; }
+.gap-tag.juste { background: #c98a1b; }
+.gap-tag.ok { background: #44634d; }
+.passages-card {
+  position: absolute; z-index: 6; right: max(12px, var(--safe-r)); top: calc(var(--top-h) + var(--safe-t) + 64px);
+  width: min(360px, calc(100vw - 24px)); background: rgba(255,255,255,.96); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 12px; display: grid; gap: 8px;
+}
+.passages-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.passages-toggle { display: grid; text-align: left; border: 0; background: none; padding: 0; }
+.passages-toggle strong { font-size: 15px; }
+.passages-toggle .muted { font-size: 12px; }
+.passages-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.passages-list li { display: flex; gap: 8px; align-items: baseline; }
+.passages-list .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; transform: translateY(1px); background: #44634d; }
+.passages-list .etroit .dot { background: #b23b2e; }
+.passages-list .juste .dot { background: #c98a1b; }
+.passages-legend { margin: 0; font-size: 11px; color: var(--ink-2); }
+.passages-legend .etroit { color: #b23b2e; }
+.passages-legend .juste { color: #9a6a12; }
+.passages-legend .ok { color: #44634d; }
+.app:has(.passages-card) .overlap-banner { display: none; }
+@media (max-width: 860px) {
+  .passages-card { top: calc(var(--top-h) + var(--safe-t) + 8px); left: 8px; right: 8px; width: auto; }
+  .passages-card.closed { padding: 6px 10px; }
+  .snap-chips .chip { white-space: nowrap; }
+}
+
+/* ---------- Pipette sur photo d'inspiration ---------- */
+.inspi-img-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: crosshair; }
+.inspi-img-btn .inspi-img { display: block; }
+.inspi-picker-badge {
+  position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px;
+  background: rgba(255,255,255,.92); color: var(--bordeaux); font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(41,35,33,.2);
+}
+.inspi-picker-badge svg { width: 15px; height: 15px; }
+.color-picker {
+  position: fixed; z-index: 40; top: calc(var(--top-h) + var(--safe-t) + 12px); right: max(12px, var(--safe-r)); bottom: calc(12px + var(--safe-b));
+  width: 400px; background: var(--white); border-radius: var(--radius); box-shadow: 0 16px 44px rgba(41,35,33,.22);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+}
+@media (min-width: 861px) { .color-picker.stage-wall { bottom: auto; } }
+.color-picker h2 { font-size: 24px; margin: 0; }
+.color-picker .hint-text { margin: 0; font-size: 14px; }
+.picker-photo { position: relative; border-radius: 12px; overflow: hidden; background: var(--sand-2); flex: 0 1 auto; min-height: 0; }
+.picker-photo img { display: block; width: 100%; max-height: 52vh; object-fit: contain; cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
+.picker-mark { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1.5px var(--ink), 0 4px 10px rgba(0,0,0,.3); pointer-events: none; }
+.picker-color { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.picker-swatch { flex: 1; min-width: 120px; min-height: 46px; border-radius: 12px; border: 1px solid var(--line); display: grid; place-items: center; font: 600 14px/1 ui-monospace, Menlo, monospace; letter-spacing: .04em; }
+.picker-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 860px) {
+  .color-picker { top: auto; left: 8px; right: 8px; width: auto; bottom: calc(8px + var(--safe-b)); max-height: 78vh; }
+  .color-picker h2 { font-size: 21px; }
+  .picker-photo img { max-height: 42vh; }
+}

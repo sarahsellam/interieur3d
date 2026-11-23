@@ -8,6 +8,7 @@ import { itemDims, openingCenter, openingDepth, overlapsOf, wallAxes } from '../
 import type { Layout, Opening, PlacedItem, WallSide } from '../model/types'
 import { WALL_LABEL, WALL_ORDER } from '../model/types'
 import { useStore } from '../store'
+import { findGaps, openingZones } from '../model/clearance'
 
 const T = 0.12 // épaisseur des murs dessinés
 const INK = '#292321'
@@ -274,6 +275,46 @@ export function Plan2D({ layout, interactive = false, className }: { layout: Lay
           />
         </g>
       ))}
+      {interactive && <ClearanceSvg layout={layout} />}
     </svg>
+  )
+}
+
+const COMFORT_FILL = { etroit: '#b23b2e', juste: '#c98a1b', ok: '#44634d' } as const
+
+/** Passages et zones d'ouverture, sur le plan dessiné (sans 3D). */
+function ClearanceSvg({ layout }: { layout: Layout }) {
+  const on = useStore((s) => s.passages)
+  const gaps = useMemo(() => (on ? findGaps(layout) : []), [on, layout])
+  const zones = useMemo(() => (on ? openingZones(layout) : []), [on, layout])
+  if (!on) return null
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {zones.map((z) => (
+        <polygon
+          key={z.item.uid}
+          points={z.corners.map((p) => p.join(',')).join(' ')}
+          fill={z.blockedBy ? 'rgba(178,59,46,.22)' : 'rgba(116,47,69,.1)'}
+          stroke={z.blockedBy ? '#b23b2e' : BORD}
+          strokeWidth={0.015}
+          strokeDasharray="0.06 0.04"
+        />
+      ))}
+      {gaps.map((g) => {
+        const c = COMFORT_FILL[g.comfort]
+        const mx = (g.from[0] + g.to[0]) / 2
+        const mz = (g.from[1] + g.to[1]) / 2
+        const label = `${Math.round(g.length * 100)} cm`
+        return (
+          <g key={g.key}>
+            <line x1={g.from[0]} y1={g.from[1]} x2={g.to[0]} y2={g.to[1]} stroke={c} strokeWidth={0.025} />
+            <rect x={mx - 0.21} y={mz - 0.08} width={0.42} height={0.16} rx={0.08} fill={c} />
+            <text x={mx} y={mz + 0.045} textAnchor="middle" fontSize={0.12} fontWeight={700} fill="#fff" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {label}
+            </text>
+          </g>
+        )
+      })}
+    </g>
   )
 }

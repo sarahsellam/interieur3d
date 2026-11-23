@@ -13,6 +13,7 @@ import { Furniture } from './Furniture'
 import { DragController } from './drag'
 import { WalkControls } from './WalkControls'
 import { PlanOverlay } from './PlanOverlay'
+import { ClearanceOverlay } from './ClearanceOverlay'
 import { CaptureHelper } from './capture'
 import { GuideProbe } from './GuideProbe'
 import { CEILING_LAMP, assetUrl } from '../data/catalog'
@@ -267,6 +268,7 @@ export function Scene({ quality, video }: { quality: 'high' | 'low'; video?: boo
       </Suspense>
       <Items />
       <PlanOverlay />
+      <ClearanceOverlay />
       <DragController />
       <Effects quality={quality} />
       <CaptureHelper />

@@ -10,6 +10,7 @@ import { captureThumb } from '../three/capture'
 import { SharePanel } from './Share'
 import { CompareButton, ComparePanel } from './Compare'
 import { Guide } from './Guide'
+import { PassagesCard, PassagesChip } from './Passages'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
 import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations'
@@ -755,6 +756,7 @@ function SnapChips() {
       <button type="button" className={`chip ${snap.walls ? 'selected' : ''}`} onClick={() => setSnap({ walls: !snap.walls })} aria-pressed={snap.walls}>
         {Icon.magnet} Murs
       </button>
+      <PassagesChip />
     </div>
   )
 }
@@ -869,6 +871,7 @@ export function EditorUI() {
       <No3DNotice />
       <OverlapBanner />
       <SnapChips />
+      <PassagesCard />
       <PinnedImage />
       <SelectionSheet />
       <EyeLevelHint />

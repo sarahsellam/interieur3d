@@ -138,8 +138,12 @@ autre couleur et voir la différence entre deux versions.
   - ✅ Guide de prise en main après « Essayer l'exemple » : déplacer un meuble, changer la couleur
     d'un mur (sur une copie), comparer ; repère animé sur la cible ; chaque étape peut être passée.
   - ✅ Nom complet du meuble dans sa fiche (avec vendeur et lien), noms du plan ajustés à la place.
-- Lot C : mesures de passage entre meubles et zones d'ouverture (portes, tiroirs) ;
-  couleur prise sur une photo d'inspiration et essayée sur un mur.
+- Lot C
+  - ✅ « Passages » : espace libre entre meubles voisins (« 38 cm entre le lit et la commode »,
+    étroit / juste / confortable), zones d'ouverture des tiroirs, des portes d'armoire et de la
+    place pour s'asseoir, signalées si un meuble ou un mur les gêne ; en plan, en 3D et sans 3D.
+  - ✅ Pipette sur une photo d'inspiration : toucher la photo, « Essayer sur mon mur », choix du mur,
+    aperçu immédiat en 3D, garder ou annuler.
 
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
