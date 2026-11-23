@@ -7,13 +7,17 @@ import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { z } from 'zod'
 import { Partages, type Avis } from './partages'
+import { Comptes, Defis, routeCompte } from './comptes'
 
-export { Partages }
+export { Partages, Comptes, Defis }
 
 export interface Env {
   ANTHROPIC_API_KEY: string
   /** Projets partagés par lien (un Durable Object par partage) */
   PARTAGES: DurableObjectNamespace<Partages>
+  /** Comptes (clés d'accès) et données synchronisées */
+  COMPTES: DurableObjectNamespace<Comptes>
+  DEFIS: DurableObjectNamespace<Defis>
   /** Origines autorisées, séparées par des virgules */
   ALLOWED_ORIGINS: string
 }
@@ -29,8 +33,8 @@ function cors(origin: string | null, env: Env) {
     ok: !!ok,
     headers: {
       'Access-Control-Allow-Origin': ok ? origin! : allowed[0],
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',
     },
@@ -308,6 +312,10 @@ export default {
     const path = url.pathname
     if (req.method === 'GET' && path === '/') return json({ service: 'Relais Mon Intérieur 3D', ok: true }, 200, headers)
     if (!ok) return json({ erreur: 'Origine non autorisée.' }, 403, headers)
+
+    // Comptes et synchronisation
+    const c = await routeCompte(req, env, req.headers.get('Origin')!, path, (b, status = 200) => json(b, status, headers), headers)
+    if (c) return c
 
     // Partages : ils ne demandent pas la clé de l'IA
     if (req.method === 'POST' && path === '/partage') return createShare(req, env, headers)

@@ -9,6 +9,7 @@ import { deleteImage } from '../model/storage'
 import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
+import { AccountCard } from './Account'
 import { Plan2D } from './Plan2D'
 import { PlanThumb } from './PlanDrawing'
 import { usePlanStore } from '../planStore'
@@ -44,7 +45,7 @@ export function Home() {
         <div className="hero-text">
           <p className="eyebrow">Aménagement d'intérieur</p>
           <h1>Aménagez votre pièce en 3D</h1>
-          <p className="lead">Saisissez vos dimensions, placez fenêtres et meubles, comparez plusieurs versions et gardez celle que vous préférez. Vos projets restent privés, sur cet appareil.</p>
+          <p className="lead">Saisissez vos dimensions, placez fenêtres et meubles, comparez plusieurs versions et gardez celle que vous préférez. Vos projets restent privés ; avec un compte, vous les retrouvez sur tous vos appareils.</p>
           <div className="hero-actions">
             <button type="button" className="btn primary large" onClick={startWizard}>
               Créer mon espace
@@ -70,6 +71,7 @@ export function Home() {
         </figure>
       </section>
 
+      <AccountCard />
       <InstallCard />
 
       <section className="home-section">

@@ -8,12 +8,25 @@ import { CATALOG } from './data/catalog'
 import { SceneBoundary } from './ui/Fallback'
 import { Plan2D } from './ui/Plan2D'
 import { useStore } from './store'
+import { usePlanStore } from './planStore'
+import { startAutoSync } from './model/account'
 import { ShareViewer } from './ui/Share'
 import { ApartmentScreen } from './ui/Apartment'
 import { shareIdFromHash } from './model/share'
 import { OfflineBadge, UpdateBanner, requestPersistentStorage } from './ui/AppShell'
 
 requestPersistentStorage()
+
+// Synchronisation du compte (si la personne est connectée)
+startAutoSync({
+  onRemoteChange: () => useStore.getState().reloadFromStorage(),
+  subscribe: (cb) => {
+    useStore.subscribe((s, p) => {
+      if (s.projects !== p.projects || s.inspirations !== p.inspirations || s.myFurniture !== p.myFurniture) cb()
+    })
+    usePlanStore.subscribe((s, p) => s.plans !== p.plans && cb())
+  },
+})
 
 // Lien de partage (…#partage-xxxxxxxxxx) : on ouvre directement la pièce partagée
 const sharedAtStart = shareIdFromHash()

@@ -35,6 +35,8 @@ Application web gratuite pour aménager une pièce en 3D, depuis un navigateur
 - **Plans d'appartement** : importer le plan du logement (photo ou PDF), régler l'échelle,
   tracer les murs au doigt (loupe, murs d'équerre), poser portes et fenêtres, nommer les pièces
   (surfaces calculées), visiter tout l'appartement en 3D, puis « Aménager cette pièce ».
+- **Compte facultatif** sans mot de passe (Face ID / Touch ID) : projets, plans, inspirations et
+  images synchronisés sur tous les appareils ; code de secours.
 - **Partage par lien** : une ou deux versions, vote A/B et commentaires, sans compte.
 - Les projets restent **privés**, enregistrés dans l'appareil (aucun compte pour l'instant).
 - **Application installable** (iPad, iPhone, Android, ordinateur) : icône, écran de démarrage,
@@ -149,6 +151,10 @@ secrète : elle n'est jamais dans l'application ni dans ce dépôt.
   `POST /partage` (crée le lien, renvoie un identifiant et une clé secrète), `GET /partage/:id`
   (pièce + votes ; avec `?cle=` les prénoms complets), `POST /partage/:id/avis`, `DELETE /partage/:id?cle=`.
   Le lien de l'application a la forme `…/interieur3d/#partage-<identifiant>`.
+- Comptes (`relais/src/comptes.ts`) : clés d'accès WebAuthn (`/compte/inscription/*`, `/compte/connexion/*`,
+  `/compte/secours`, `/compte/cle/*`), un Durable Object SQLite par compte (éléments synchronisés + images),
+  `POST /compte/sync` (envoi des changements, réception de ceux faits ailleurs), `/compte/image/:id`.
+  Le domaine de la clé d'accès est celui de la page (sarahsellam.github.io).
 - Seules les adresses listées dans `ALLOWED_ORIGINS` (`relais/wrangler.toml`) peuvent l'appeler.
 - La clé se saisit comme secret `ANTHROPIC_API_KEY` dans le tableau de bord Cloudflare.
 - Déploiement : `cd relais && npm install && npx wrangler deploy`.

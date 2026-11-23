@@ -18,3 +18,16 @@ class_name = "Partages"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Partages"]
+
+# Comptes (clés d'accès) et synchronisation des projets
+[[durable_objects.bindings]]
+name = "COMPTES"
+class_name = "Comptes"
+
+[[durable_objects.bindings]]
+name = "DEFIS"
+class_name = "Defis"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Comptes", "Defis"]

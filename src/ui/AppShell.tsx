@@ -116,7 +116,7 @@ export function InstallCard() {
             <li>
               Choisissez <strong>« Sur l'écran d'accueil »</strong>, puis <strong>Ajouter</strong>.
             </li>
-            <li>Ouvrez ensuite l'application depuis son icône. Pour y retrouver vos projets créés ici, utilisez « Sauvegarde » plus bas.</li>
+            <li>Ouvrez ensuite l'application depuis son icône. Pour y retrouver vos projets créés ici, connectez-vous à votre compte (ou utilisez « Sauvegarde » plus bas).</li>
           </ol>
         )}
       </div>
@@ -146,7 +146,7 @@ export function BackupSection() {
         <h2>Sauvegarde</h2>
       </div>
       <p className="hint-text">
-        Vos projets restent sur cet appareil. Enregistrez une copie dans un fichier pour les garder en sécurité ou les retrouver ailleurs, par exemple dans l'application installée sur l'écran
+        Sans compte, vos projets restent sur cet appareil. Enregistrez une copie dans un fichier pour les garder en sécurité ou les retrouver ailleurs, par exemple dans l'application installée sur l'écran
         d'accueil, qui ne partage pas ses données avec Safari.
       </p>
       <div className="choice-row">

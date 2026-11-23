@@ -114,7 +114,10 @@ différentes pour le mur rose. Le parcours doit être fluide sur iPad.
   pièces non rectangulaires dans l'éditeur de pièce.
 
 ## Étape 7 — Comptes et sauvegarde en ligne
-- Compte (e-mail, Apple, Google), projets retrouvés sur tous les appareils.
+- ✅ Compte sans mot de passe par clé d'accès (Face ID, Touch ID, empreinte), synchronisée par
+  le trousseau iCloud / Google ; code de secours ; ajout d'une clé sur un nouvel appareil.
+- ✅ Synchronisation automatique des projets, plans d'appartement, inspirations, « Mes meubles »
+  et images entre appareils (la modification la plus récente l'emporte), déconnexion, suppression du compte.
 - Export en image et en plan PDF.
 - Mentions légales, confidentialité, RGPD.
 
