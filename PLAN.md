@@ -145,6 +145,12 @@ autre couleur et voir la différence entre deux versions.
   - ✅ Pipette sur une photo d'inspiration : toucher la photo, « Essayer sur mon mur », choix du mur,
     aperçu immédiat en 3D, garder ou annuler.
 
+## Décoration (demande de novembre 2026) ✅
+- Linge de lit : couleur et motif de la couette (uni, rayures, carreaux, pois), draps et taies, plaid.
+- Coussins décoratifs (0 à 3, couleur de chacun) sur le lit et le canapé en lin.
+- Tableaux aux murs : 8 affiches créées pour l'application ou une photo encadrée ; taille, cadre
+  (chêne, noir, blanc, sans), mur et position ; synchronisés et sauvegardés avec le projet.
+
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.

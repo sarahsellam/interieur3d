@@ -236,6 +236,8 @@ const stamp = (type: ItemType, item: { updatedAt?: number }) => (type === 'proje
 function imageIds(d: LocalData) {
   const ids = new Set<string>()
   d.projet.forEach((p) => p.references.forEach((r) => ids.add(r.id)))
+  // Photos encadrées en tableau, dans toutes les versions
+  d.projet.forEach((p) => p.versions.forEach((v) => (v.decor ?? []).forEach((x) => x.imageId && ids.add(x.imageId))))
   d.plan.forEach((p) => p.image && ids.add(p.image.id))
   d.inspiration.forEach((i) => i.imageId && ids.add(i.imageId))
   d.meuble.forEach((f) => f.imageId && ids.add(f.imageId))

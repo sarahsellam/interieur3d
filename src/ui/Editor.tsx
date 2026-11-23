@@ -10,6 +10,7 @@ import { captureThumb } from '../three/capture'
 import { SharePanel } from './Share'
 import { CompareButton, ComparePanel } from './Compare'
 import { Guide } from './Guide'
+import { DecorControls, DecorSection, TextilesPanel, textileKind } from './Decor'
 import { PassagesCard, PassagesChip } from './Passages'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Icon, MeasureField, Swatches, fmtM } from './common'
@@ -298,6 +299,7 @@ function Catalog({ onAdded }: { onAdded: () => void }) {
           </div>
         </section>
       ))}
+      <DecorSection onAdded={onAdded} />
       <p className="credits">
         Modèles 3D et textures : <a href="https://polyhaven.com" target="_blank" rel="noreferrer">Poly Haven</a> (licence CC0).
       </p>
@@ -455,7 +457,7 @@ function ItemControls({ id }: { id: string }) {
   const select = useStore((s) => s.select)
   const setItemStatus = useStore((s) => s.setItemStatus)
   const setItemPrice = useStore((s) => s.setItemPrice)
-  const [sub, setSub] = useState<'move' | 'color' | 'dims' | null>(null)
+  const [sub, setSub] = useState<'move' | 'color' | 'dims' | 'linge' | null>(null)
   const [replacing, setReplacing] = useState(false)
   if (!item) return null
   const c = getItem(item.modelId)
@@ -555,6 +557,12 @@ function ItemControls({ id }: { id: string }) {
             <span>Couleur</span>
           </button>
         )}
+        {textileKind(item) && (
+          <button type="button" className={`tool ${sub === 'linge' ? 'on' : ''}`} onClick={() => setSub(sub === 'linge' ? null : 'linge')}>
+            {Icon.palette}
+            <span>{textileKind(item) === 'lit' ? 'Linge de lit' : 'Coussins'}</span>
+          </button>
+        )}
         <button type="button" className={`tool ${sub === 'dims' ? 'on' : ''}`} onClick={() => setSub(sub === 'dims' ? null : 'dims')} disabled={locked}>
           {Icon.ruler}
           <span>Dimensions</span>
@@ -601,6 +609,7 @@ function ItemControls({ id }: { id: string }) {
           <Swatches colors={colors} value={item.color} onChange={(hex) => setItemColor(item.uid, hex)} originalLabel="Couleur d'origine" />
         </div>
       )}
+      {sub === 'linge' && <TextilesPanel item={item} />}
       {sub === 'dims' && !locked && (
         <div className="sub-panel dims-row">
           <MeasureField compact unit="cm" label="Largeur" value={d.width} min={0.1} max={6} onChange={(width) => setItemDims(item.uid, { ...d, width })} />
@@ -719,6 +728,7 @@ function SelectionSheet() {
       {selection.type === 'item' && <ItemControls key={selection.id} id={selection.id} />}
       {selection.type === 'wall' && <WallControls side={selection.id} />}
       {selection.type === 'opening' && <OpeningControls key={selection.id} id={selection.id} />}
+      {selection.type === 'decor' && <DecorControls key={selection.id} id={selection.id} />}
     </div>
   )
 }

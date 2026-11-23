@@ -12,6 +12,7 @@ import { FLOORS, floorTexture, texture } from '../data/finishes'
 import { openingDepth } from '../model/geometry'
 import { Wall, type ArchMaterials, type WallSpec } from './architecture'
 import { startOpeningDrag } from './drag'
+import { DecorPiece } from './WallDecor'
 
 export const WALL_T = 0.12 // épaisseur des murs (m)
 /** Calque des objets masqués à la vue mais qui projettent encore leur ombre. */
@@ -149,6 +150,7 @@ function Floor() {
 function Walls({ m, wallMats }: { m: ArchMaterials; wallMats: Record<WallSide, THREE.MeshStandardMaterial> }) {
   const room = useStore((s) => shownLayout(s).room)
   const openings = useStore((s) => shownLayout(s).openings)
+  const decor = useStore((s) => shownLayout(s).decor)
   const view = useStore((s) => s.view)
   const selection = useStore((s) => s.selection)
   const select = useStore((s) => s.select)
@@ -213,7 +215,14 @@ function Walls({ m, wallMats }: { m: ArchMaterials; wallMats: Record<WallSide, T
               startOpeningDrag(id, e.ray, e.pointerId)
             },
           }}
-        />
+        >
+          {(decor ?? [])
+            .filter((d) => d.wall === w.side)
+            .map((d) => {
+              const length = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1])
+              return <DecorPiece key={d.id} d={d} u={length / 2 + d.offset} selected={selection?.type === 'decor' && selection.id === d.id} />
+            })}
+        </Wall>
       ))}
     </group>
   )

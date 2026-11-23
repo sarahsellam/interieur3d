@@ -35,6 +35,7 @@ export async function exportBackup(): Promise<{ file: File; counts: { projects: 
   const ids = new Set<string>()
   plans.forEach((p) => p.image && ids.add(p.image.id))
   projects.forEach((p) => p.references.forEach((r) => ids.add(r.id)))
+  projects.forEach((p) => p.versions.forEach((v) => (v.decor ?? []).forEach((x) => x.imageId && ids.add(x.imageId))))
   inspirations.forEach((i) => i.imageId && ids.add(i.imageId))
   myFurniture.forEach((f) => f.imageId && ids.add(f.imageId))
   const images: Record<string, string> = {}

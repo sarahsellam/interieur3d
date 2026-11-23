@@ -6,7 +6,7 @@ import { RoundedBox, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { texture } from '../data/finishes'
 import { CUSTOM_PREFIX, getItem } from '../data/catalog'
-import type { ItemDims } from '../model/types'
+import type { ItemDims, TextileMotif, Textiles } from '../model/types'
 
 const DEFAULT_FABRIC = '#d8cdb9'
 const DEFAULT_WOOD = '#c49a6c'
@@ -38,6 +38,60 @@ function useFabric(name: string, repeat: number, color: string, normal = 1) {
   }, [map, nor, rough, repeat, color, normal])
 }
 
+const mix = (a: string, b: string, t: number) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), t).getHexString()
+
+/** Tissu à motif (rayures, carreaux, pois) dessiné à la volée, avec le relief du lin. */
+function usePatternFabric(color: string, motif: TextileMotif, repeat: number) {
+  const [nor, rough] = useTexture([texture('linen_nor'), texture('linen_rough')])
+  return useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 256
+    const g = c.getContext('2d')!
+    g.fillStyle = color
+    g.fillRect(0, 0, 256, 256)
+    // Le motif est un ton plus soutenu (ou plus clair sur un tissu foncé)
+    const dark = new THREE.Color(color).getHSL({ h: 0, s: 0, l: 0 }).l < 0.35
+    const ink = mix(color, dark ? '#ffffff' : '#2b2624', dark ? 0.35 : 0.28)
+    g.fillStyle = ink
+    if (motif === 'rayures') for (let x = 0; x < 256; x += 64) g.fillRect(x, 0, 22, 256)
+    if (motif === 'carreaux') {
+      g.globalAlpha = 0.55
+      for (let x = 0; x < 256; x += 64) g.fillRect(x, 0, 32, 256)
+      for (let y = 0; y < 256; y += 64) g.fillRect(0, y, 256, 32)
+      g.globalAlpha = 1
+    }
+    if (motif === 'pois')
+      for (let y = 16; y < 256; y += 32)
+        for (let x = (y / 32) % 2 ? 0 : 16; x < 256; x += 32) {
+          g.beginPath()
+          g.arc(x, y, 5, 0, Math.PI * 2)
+          g.fill()
+        }
+    const map = new THREE.CanvasTexture(c)
+    map.colorSpace = THREE.SRGBColorSpace
+    map.wrapS = map.wrapT = THREE.RepeatWrapping
+    map.repeat.set(repeat, repeat)
+    const prep = (t: THREE.Texture) => {
+      const k = t.clone()
+      k.wrapS = k.wrapT = THREE.RepeatWrapping
+      k.repeat.set(repeat * 2, repeat * 2)
+      k.needsUpdate = true
+      return k
+    }
+    return new THREE.MeshPhysicalMaterial({ map, normalMap: prep(nor), normalScale: new THREE.Vector2(0.8, 0.8), roughnessMap: prep(rough), roughness: 1, envMapIntensity: 0.6, sheen: 0.5, sheenRoughness: 0.8, sheenColor: new THREE.Color('#ffffff') })
+  }, [nor, rough, color, motif, repeat])
+}
+
+/** Coussin décoratif carré, légèrement penché. */
+function Cushion({ position, rotY = 0, color, size = 0.42 }: { position: [number, number, number]; rotY?: number; color: string; size?: number }) {
+  const mat = useFabric('linen', 2, color, 1)
+  return (
+    <group position={position} rotation-y={rotY}>
+      <RoundedBox args={[size, size, 0.14]} radius={0.06} smoothness={6} rotation-x={-0.32} material={mat} castShadow receiveShadow />
+    </group>
+  )
+}
+
 /** Bois de chêne (texture réelle en niveaux de gris) teinté de la couleur choisie. */
 function useWood(color: string) {
   const [map, nor, rough] = useTexture([texture('wood_detail'), texture('wood_nor'), texture('wood_rough')])
@@ -52,7 +106,7 @@ function useMetal(color = '#b89a6a') {
   return useMemo(() => new THREE.MeshStandardMaterial({ color, metalness: 1, roughness: 0.3 }), [color])
 }
 
-type P = { dims: ItemDims; color: string | null }
+type P = { dims: ItemDims; color: string | null; textiles?: Textiles }
 
 function Leg({ x, z, h, mat, r = 0.02 }: { x: number; z: number; h: number; mat: THREE.Material; r?: number }) {
   return (
@@ -71,7 +125,7 @@ function Knob({ x, y, z, mat }: { x: number; y: number; z: number; mat: THREE.Ma
 }
 
 /** Canapé 3 places contemporain, lin, pieds en chêne. */
-export function LinenSofa({ dims, color }: P) {
+export function LinenSofa({ dims, color, textiles }: P) {
   const fabric = useFabric('linen', 4, color ?? DEFAULT_FABRIC, 0.8)
   const oak = useWood('#8a6a4a')
   const { width: W, depth: D, height: H } = dims
@@ -101,16 +155,25 @@ export function LinenSofa({ dims, color }: P) {
           </group>
         )
       })}
+      {/* Coussins décoratifs, posés contre le dossier, vers les accoudoirs */}
+      {(textiles?.coussins ?? []).slice(0, 3).map((col, i, all) => {
+        const slots = all.length === 1 ? [-1] : all.length === 2 ? [-1, 1] : [-1, 1, 0]
+        const x = slots[i] === 0 ? 0 : slots[i] * (W / 2 - armW - 0.3)
+        return <Cushion key={i} color={col} position={[x, seatY + 0.36, z0 + backD + 0.2]} rotY={slots[i] * -0.12} size={0.44} />
+      })}
     </group>
   )
 }
 
 /** Lit avec tête de lit capitonnée, sommier tapissier, matelas, couette, oreillers et plaid. */
-export function Bed({ dims, color }: P) {
+export function Bed({ dims, color, textiles }: P) {
   const frame = useFabric('linen', 4, color ?? DEFAULT_FABRIC, 0.8)
-  const sheet = useFabric('linen', 5, '#f4f1ec', 0.5)
-  const duvet = useFabric('linen', 5, '#ebe5da', 0.9)
-  const throwMat = useFabric('rug_wool', 3, '#d9cdb8', 1)
+  const sheet = useFabric('linen', 5, textiles?.draps ?? '#f4f1ec', 0.5)
+  const duvetPlain = useFabric('linen', 5, textiles?.couette ?? '#ebe5da', 0.9)
+  const duvetPattern = usePatternFabric(textiles?.couette ?? '#ebe5da', textiles?.motif ?? 'uni', 3)
+  const duvet = textiles?.motif && textiles.motif !== 'uni' ? duvetPattern : duvetPlain
+  const throwMat = useFabric('rug_wool', 3, textiles?.plaid ?? '#d9cdb8', 1)
+  const showThrow = textiles?.plaid !== null
   const oak = useWood('#8a6a4a')
   const { width: W, depth: D, height: H } = dims
   const legH = 0.08
@@ -136,7 +199,14 @@ export function Bed({ dims, color }: P) {
       <RoundedBox args={[W + 0.02, 0.07, bodyD * 0.68]} radius={0.035} smoothness={5} position={[0, top + 0.02, z0 + headT + bodyD * 0.66]} material={duvet} castShadow receiveShadow />
       <RoundedBox args={[W + 0.04, mattressH * 0.8, 0.05]} radius={0.025} smoothness={4} position={[0, top - mattressH * 0.35, D / 2 - 0.005]} material={duvet} castShadow receiveShadow />
       {/* Plaid au pied du lit */}
-      <RoundedBox args={[W + 0.05, 0.03, 0.34]} radius={0.015} smoothness={4} position={[0, top + 0.07, D / 2 - 0.26]} material={throwMat} castShadow receiveShadow />
+      {showThrow && <RoundedBox args={[W + 0.05, 0.03, 0.34]} radius={0.015} smoothness={4} position={[0, top + 0.07, D / 2 - 0.26]} material={throwMat} castShadow receiveShadow />}
+      {/* Coussins décoratifs devant les oreillers */}
+      {(textiles?.coussins ?? []).slice(0, 3).map((col, i, all) => {
+        const n = all.length
+        const span = Math.min(W - 0.5, 0.5 * (n - 1))
+        const x = n === 1 ? 0 : -span / 2 + (span / (n - 1)) * i
+        return <Cushion key={i} color={col} position={[x, top + 0.2, z0 + headT + 0.55]} rotY={n === 1 ? 0 : (i - (n - 1) / 2) * -0.15} size={n === 3 && i === 1 ? 0.36 : 0.42} />
+      })}
       {/* Oreillers */}
       {Array.from({ length: pillows }, (_, i) => {
         const x = pillows === 1 ? 0 : (i === 0 ? -1 : 1) * (pillowW / 2 + 0.03)
@@ -327,7 +397,7 @@ function SimplifiedFurniture({ dims, color, category }: P & { category: string }
   return <RoundedBox args={[W, H, D]} radius={r} smoothness={3} position={[0, H / 2, 0]} material={mat} castShadow receiveShadow />
 }
 
-export function ProceduralModel({ id, dims, color }: { id: string } & P) {
+export function ProceduralModel({ id, dims, color, textiles }: { id: string } & P) {
   if (id.startsWith(CUSTOM_PREFIX)) {
     const c = getItem(id)
     return <SimplifiedFurniture dims={dims} color={color ?? c?.color ?? null} category={c?.category ?? 'rangement'} />
@@ -335,12 +405,12 @@ export function ProceduralModel({ id, dims, color }: { id: string } & P) {
   // Une référence du commerce est dessinée avec le meuble du catalogue qui lui ressemble
   switch (getItem(id)?.base ?? id) {
     case 'sofa_lin':
-      return <LinenSofa dims={dims} color={color} />
+      return <LinenSofa dims={dims} color={color} textiles={textiles} />
     case 'rug_wool':
       return <WoolRug dims={dims} color={color} />
     case 'lit_double':
     case 'lit_simple':
-      return <Bed dims={dims} color={color} />
+      return <Bed dims={dims} color={color} textiles={textiles} />
     case 'chevet':
       return <DrawerChest dims={dims} color={color} cols={1} rows={2} />
     case 'commode':

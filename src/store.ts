@@ -2,10 +2,11 @@
 // d'édition, sélection, historique (annuler / rétablir) et enregistrement.
 import { create } from 'zustand'
 import { CUSTOM_PREFIX, getItem, registerCustomFurniture } from './data/catalog'
-import { clampOffset, clampToRoom, snapPosition } from './model/geometry'
+import { clampOffset, clampToRoom, snapPosition, wallLength, wallAxes } from './model/geometry'
+import { ART } from './data/art'
 import { loadInspirations, loadMyFurniture, loadProjects, saveInspirations, saveMyFurniture, saveProjects, deleteImage } from './model/storage'
 import { startLayout, type StartKind } from './model/templates'
-import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ShareRef, ViewMode, WallSide } from './model/types'
+import type { Inspiration, ItemDims, ItemStatus, Layout, MyFurniture, Opening, OpeningKind, PlacedItem, Project, RefImage, Room, RoomType, Selection, ShareRef, Textiles, WallDecor, ViewMode, WallSide } from './model/types'
 import { uid } from './model/types'
 import { hasWebGL2 } from './ui/Fallback'
 import { usePlanStore } from './planStore'
@@ -116,6 +117,12 @@ interface State {
   // Statut et prix
   setItemStatus: (uid: string, status: ItemStatus) => void
   setItemPrice: (uid: string, price: number | null) => void
+  /** Linge de lit et coussins */
+  setTextiles: (id: string, patch: Partial<Textiles>) => void
+  // Tableaux aux murs
+  addDecor: (art: string, opts?: { imageId?: string; ratio?: number }) => void
+  updateDecor: (id: string, patch: Partial<WallDecor>, key?: string) => void
+  removeDecor: (id: string) => void
 
   // Remplacement
   previewReplace: (uid: string, modelId: string) => void
@@ -156,6 +163,29 @@ let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 const initialProjects = loadProjects()
 const initialFurniture = loadMyFurniture()
 registerCustomFurniture(initialFurniture)
+
+/** Emplacement d'un nouveau tableau : au-dessus de la tête de lit s'il y en a une, sinon au milieu du mur le plus libre. */
+function defaultDecorPlace(l: Layout, height: number): { wall: WallSide; offset: number; y: number } {
+  const bed = l.items.find((i) => getItem(i.modelId)?.kind === 'lit')
+  if (bed) {
+    // La tête de lit est du côté -Z du lit : on cherche le mur le plus proche dans cette direction
+    const back = { x: bed.x - Math.sin(bed.rot), z: bed.z - Math.cos(bed.rot) }
+    const sides: WallSide[] = ['nord', 'est', 'sud', 'ouest']
+    const dist = (w: WallSide) => {
+      const a = wallAxes(l.room, w)
+      return Math.abs((back.x - a.a[0]) * a.inward[0] + (back.z - a.a[1]) * a.inward[1])
+    }
+    const wall = [...sides].sort((p, q) => dist(p) - dist(q))[0]
+    const a = wallAxes(l.room, wall)
+    const mid = { x: (a.a[0] + a.b[0]) / 2, z: (a.a[1] + a.b[1]) / 2 }
+    const offset = (bed.x - mid.x) * a.dir[0] + (bed.z - mid.z) * a.dir[1]
+    const headTop = (getItem(bed.modelId)?.height ?? 1) + 0.12
+    return { wall, offset, y: Math.min(l.room.height - height / 2 - 0.15, headTop + height / 2) }
+  }
+  // Mur avec le moins d'ouvertures
+  const wall = (['nord', 'est', 'sud', 'ouest'] as WallSide[]).sort((p, q) => l.openings.filter((o) => o.wall === p).length - l.openings.filter((o) => o.wall === q).length)[0]
+  return { wall, offset: 0, y: Math.max(1.5, height / 2 + 0.9) }
+}
 
 export const useStore = create<State>()((set, get) => {
   /** Modifie la version en cours après avoir mémorisé l'état précédent (pour « Annuler »). */
@@ -483,6 +513,37 @@ export const useStore = create<State>()((set, get) => {
     pinImage: (pinnedImage) => set({ pinnedImage }),
 
     setItemStatus: (id, status) => edit(`statut-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.status = status))),
+    setTextiles: (id, patch) =>
+      edit(`linge-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.textiles = { ...it.textiles, ...patch }))),
+
+    addDecor: (art, opts = {}) => {
+      const l = get().layout
+      const ratio = opts.ratio ?? ART.find((a) => a.id === art)?.ratio ?? 4 / 3
+      // Largeur : 50 cm pour une affiche en hauteur, 70 cm en largeur
+      const width = ratio >= 1 ? 0.5 : 0.7
+      const height = Math.round(width * ratio * 100) / 100
+      const place = defaultDecorPlace(l, height)
+      const d: WallDecor = { id: uid(), art, imageId: opts.imageId, frame: 'chene', width, height, ...place }
+      edit('tableau', (x) => (x.decor = [...(x.decor ?? []), d]))
+      set({ selection: { type: 'decor', id: d.id } })
+    },
+    updateDecor: (id, patch, key) =>
+      edit(key ?? `tableau-${id}`, (l) => {
+        l.decor = (l.decor ?? []).map((d) => {
+          if (d.id !== id) return d
+          const n = { ...d, ...patch }
+          // Reste sur le mur et entre le sol et le plafond
+          const half = wallLength(l.room, n.wall) / 2 - n.width / 2 - 0.02
+          n.offset = Math.max(-half, Math.min(half, n.offset))
+          n.y = Math.max(n.height / 2 + 0.05, Math.min(l.room.height - n.height / 2 - 0.05, n.y))
+          return n
+        })
+      }),
+    removeDecor: (id) => {
+      edit('suppr-tableau', (l) => (l.decor = (l.decor ?? []).filter((d) => d.id !== id)))
+      set({ selection: null })
+    },
+
     setItemPrice: (id, price) => edit(`prix-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.price = price))),
 
     previewReplace: (id, modelId) => {

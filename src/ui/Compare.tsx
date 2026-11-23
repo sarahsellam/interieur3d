@@ -29,9 +29,11 @@ export function versionDiff(a: Layout, b: Layout): string[] {
     else if (o.modelId !== it.modelId) out.push(`Remplacé : ${name(o.modelId)} → ${name(it.modelId)}`)
     else if (Math.hypot(o.x - it.x, o.z - it.z) > 0.04 || Math.abs(o.rot - it.rot) > 0.01) out.push(`Déplacé : ${name(it.modelId)}`)
     else if ((o.color ?? '') !== (it.color ?? '')) out.push(`Autre couleur : ${name(it.modelId)}`)
+    else if (JSON.stringify(o.textiles ?? {}) !== JSON.stringify(it.textiles ?? {})) out.push(`Linge ou coussins : ${name(it.modelId)}`)
   }
   for (const it of a.items) if (!inB.has(it.uid)) out.push(`Retiré : ${name(it.modelId)}`)
   if (JSON.stringify(a.openings) !== JSON.stringify(b.openings)) out.push('Portes ou fenêtres modifiées')
+  if (JSON.stringify(a.decor ?? []) !== JSON.stringify(b.decor ?? [])) out.push('Tableaux modifiés')
   if (a.room.width !== b.room.width || a.room.depth !== b.room.depth) out.push('Dimensions de la pièce modifiées')
   return out
 }

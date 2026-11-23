@@ -354,7 +354,7 @@ export interface WallHandlers {
   selectedOpening?: string | null
 }
 
-export function Wall({ spec, m, wallMat, groupRef, handlers = {} }: { spec: WallSpec; m: ArchMaterials; wallMat: THREE.Material; groupRef?: (g: THREE.Group | null) => void; handlers?: WallHandlers }) {
+export function Wall({ spec, m, wallMat, groupRef, handlers = {}, children }: { spec: WallSpec; m: ArchMaterials; wallMat: THREE.Material; groupRef?: (g: THREE.Group | null) => void; handlers?: WallHandlers; children?: React.ReactNode }) {
   const { length, angle, position } = wallFrame(spec)
   const geo = useMemo(() => wallGeometry(spec, length), [spec, length])
   return (
@@ -393,6 +393,7 @@ export function Wall({ spec, m, wallMat, groupRef, handlers = {} }: { spec: Wall
           {handlers.selectedOpening === o.id && <OpeningOutline o={o} />}
         </group>
       ))}
+      {children}
     </group>
   )
 }

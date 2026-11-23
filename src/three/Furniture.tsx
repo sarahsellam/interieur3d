@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import { getItem, assetUrl } from '../data/catalog'
 import { shownLayout, useStore, type PlacedItem } from '../store'
 import { itemDims, overlapsOf } from '../model/geometry'
-import type { ItemDims } from '../model/types'
+import type { ItemDims, Textiles } from '../model/types'
 import { startDrag } from './drag'
 import { ProceduralModel } from './procedural'
 
@@ -104,14 +104,14 @@ function ModelPrimitive({ modelId, dims, color, onPointerDown }: { modelId: stri
   )
 }
 
-export function FurnitureShape({ modelId, dims, color, onPointerDown }: { modelId: string; dims?: ItemDims; color?: string | null; onPointerDown?: (e: ThreeEvent<PointerEvent>) => void }) {
+export function FurnitureShape({ modelId, dims, color, textiles, onPointerDown }: { modelId: string; dims?: ItemDims; color?: string | null; textiles?: Textiles; onPointerDown?: (e: ThreeEvent<PointerEvent>) => void }) {
   const c = getItem(modelId)!
   const handler = onPointerDown ?? (() => {})
   const d = dims ?? { width: c.width, depth: c.depth, height: c.height }
   if (c.procedural) {
     return (
       <group onPointerDown={handler}>
-        <ProceduralModel id={modelId} dims={d} color={color ?? c.color ?? null} />
+        <ProceduralModel id={modelId} dims={d} color={color ?? c.color ?? null} textiles={textiles} />
       </group>
     )
   }
@@ -143,7 +143,7 @@ export function Furniture({ item }: { item: PlacedItem }) {
 
   return (
     <group position={[item.x, 0, item.z]} rotation-y={item.rot}>
-      <FurnitureShape modelId={item.modelId} dims={item.dims} color={item.color} onPointerDown={onPointerDown} />
+      <FurnitureShape modelId={item.modelId} dims={item.dims} color={item.color} textiles={item.textiles} onPointerDown={onPointerDown} />
       {(selected || overlapping) && <SelectionOutline width={dims.width} depth={dims.depth} color={overlapping ? '#c0392b' : '#742f45'} />}
       {selected && !dragging && (
         <Html position={[0, dims.height + 0.15, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>

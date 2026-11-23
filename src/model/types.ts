@@ -76,6 +76,8 @@ export interface PlacedItem {
   status?: ItemStatus
   /** Prix saisi pour cet exemplaire (sinon celui de la fiche « Mes meubles ») */
   price?: number | null
+  /** Linge de lit et coussins (lits et canapé en lin) */
+  textiles?: Textiles
 }
 
 export type ItemStatus = 'possede' | 'a-acheter'
@@ -102,6 +104,36 @@ export interface MyFurniture {
 }
 
 /** Une version d'aménagement : la pièce et tout ce qu'elle contient. */
+export type TextileMotif = 'uni' | 'rayures' | 'carreaux' | 'pois'
+
+export interface Textiles {
+  /** Couette ou housse de couette */
+  couette?: string
+  motif?: TextileMotif
+  /** Draps et taies d'oreiller */
+  draps?: string
+  /** Coussins décoratifs : une couleur par coussin (0 à 3) */
+  coussins?: string[]
+  /** Plaid au pied du lit (null : sans plaid) */
+  plaid?: string | null
+}
+
+/** Tableau accroché à un mur. */
+export interface WallDecor {
+  id: string
+  wall: WallSide
+  /** Décalage du centre depuis le milieu du mur, dans le sens du mur (m) */
+  offset: number
+  /** Hauteur du centre au-dessus du sol (m) */
+  y: number
+  width: number
+  height: number
+  /** Affiche de la collection, ou « photo » (image de l'appareil) */
+  art: string
+  imageId?: string
+  frame: 'chene' | 'noir' | 'blanc' | 'sans'
+}
+
 export interface Layout {
   id: string
   name: string
@@ -110,6 +142,8 @@ export interface Layout {
   floorId: string
   openings: Opening[]
   items: PlacedItem[]
+  /** Tableaux aux murs */
+  decor?: WallDecor[]
   updatedAt: number
   /** Petite image de la vue 3D (JPEG en data URL) */
   thumb?: string
@@ -173,6 +207,6 @@ export const VIEW_LABEL: Record<ViewMode, string> = {
   yeux: 'À hauteur des yeux',
 }
 
-export type Selection = { type: 'item'; id: string } | { type: 'wall'; id: WallSide } | { type: 'opening'; id: string } | null
+export type Selection = { type: 'item'; id: string } | { type: 'wall'; id: WallSide } | { type: 'opening'; id: string } | { type: 'decor'; id: string } | null
 
 export const uid = () => Math.random().toString(36).slice(2, 10)

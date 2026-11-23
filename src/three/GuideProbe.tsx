@@ -14,6 +14,7 @@ export function GuideProbe() {
     }
   }, [invalidate])
   useFrame(({ camera, size }) => {
+    if (import.meta.env.DEV) (window as unknown as { __cam: THREE.Camera }).__cam = camera
     const t = guideProbe.target?.()
     if (!t || !guideProbe.place) return
     v.set(t[0], t[1], t[2]).project(camera)
