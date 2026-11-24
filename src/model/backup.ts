@@ -51,11 +51,11 @@ export async function exportBackup(): Promise<{ file: File; counts: { projects: 
 }
 
 /** Propose d'enregistrer le fichier (feuille de partage sur iPad/iPhone, téléchargement ailleurs). */
-export async function offerFile(file: File) {
+export async function offerFile(file: File, title = 'Sauvegarde Mon Intérieur 3D') {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
   if (nav.canShare?.({ files: [file] })) {
     try {
-      await nav.share({ files: [file], title: 'Sauvegarde Mon Intérieur 3D' })
+      await nav.share({ files: [file], title })
       return
     } catch (e) {
       if ((e as Error).name === 'AbortError') return

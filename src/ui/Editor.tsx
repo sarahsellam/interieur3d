@@ -8,6 +8,7 @@ import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type O
 import { ROOM_LIMITS, useProject, useStore } from '../store'
 import { captureThumb } from '../three/capture'
 import { SharePanel } from './Share'
+import { ExportPanel } from './Export'
 import { CompareButton, ComparePanel } from './Compare'
 import { Guide } from './Guide'
 import { DecorControls, DecorSection, TextilesPanel, textileKind } from './Decor'
@@ -28,7 +29,7 @@ async function saveWithThumb() {
 
 // ---------------------------------------------------------------- Barre du haut
 
-function VersionMenu({ onClose, onShare }: { onClose: () => void; onShare: () => void }) {
+function VersionMenu({ onClose, onShare, onExport }: { onClose: () => void; onShare: () => void; onExport: () => void }) {
   const project = useProject()
   const layout = useStore((s) => s.layout)
   const switchVersion = useStore((s) => s.switchVersion)
@@ -96,6 +97,9 @@ function VersionMenu({ onClose, onShare }: { onClose: () => void; onShare: () =>
           {Icon.swap} Comparer deux versions
         </button>
       )}
+      <button type="button" className="btn secondary" onClick={onExport}>
+        {Icon.download} Exporter : image ou plan PDF
+      </button>
       <button type="button" className="btn secondary" onClick={onShare}>
         {Icon.share} Demander un avis sur mes versions
       </button>
@@ -183,6 +187,7 @@ function TopBar() {
   const setIdeaOpen = useStore((s) => s.setIdeaOpen)
   const sharing = useStore((s) => s.shareOpen)
   const setSharing = useStore((s) => s.setShareOpen)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (!savedAt) return
@@ -211,7 +216,8 @@ function TopBar() {
             <span className="version-name">{layout.name}</span> {Icon.chevron}
           </button>
         </div>
-        {menu && <VersionMenu onClose={() => setMenu(false)} onShare={() => (setMenu(false), setSharing(true))} />}
+        {menu && <VersionMenu onClose={() => setMenu(false)} onShare={() => (setMenu(false), setSharing(true))} onExport={() => (setMenu(false), setExporting(true))} />}
+        {exporting && <ExportPanel onClose={() => setExporting(false)} />}
         <CompareButton />
       </div>
       <div className="segmented" role="tablist" aria-label="Type de vue">

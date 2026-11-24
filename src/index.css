@@ -1021,3 +1021,30 @@ h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; t
 }
 .project-grid > .project-card { scroll-snap-align: start; }
 @media (max-width: 520px) { .project-grid { grid-auto-columns: 78%; } }
+
+/* ---------- Exporter ---------- */
+.export-card { width: min(560px, 100%); }
+.export-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.export-option { display: grid; gap: 4px; align-content: start; text-align: left; padding: 14px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--white); }
+.export-option:hover:not(:disabled) { border-color: var(--bordeaux); background: var(--bordeaux-soft); }
+.export-option strong { font-size: 15px; }
+.export-option .muted { font-size: 13px; line-height: 1.35; }
+.export-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--bordeaux-soft); color: var(--bordeaux); display: grid; place-items: center; margin-bottom: 4px; }
+.export-icon svg { width: 22px; height: 22px; }
+.export-card .hint-text { margin: 0; }
+.export-ready { display: grid; gap: 10px; }
+.export-ready img { width: 100%; max-height: 50vh; object-fit: contain; border-radius: 12px; background: var(--sand-2); }
+.export-pdf { display: flex; align-items: center; gap: 10px; padding: 18px; border-radius: 12px; background: var(--sand-2); font-weight: 600; word-break: break-all; }
+.export-pdf svg { width: 24px; height: 24px; color: var(--bordeaux); flex: none; }
+.export-ready-label { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--green); font-weight: 600; }
+.export-ready-label svg { width: 18px; height: 18px; }
+@media (max-width: 520px) { .export-options { grid-template-columns: 1fr; } }
+
+/* ---------- Confidentialité ---------- */
+.privacy { width: min(680px, 100%); gap: 8px; }
+.privacy h3 { margin: 10px 0 0; font-family: var(--sans); font-size: 15px; font-weight: 600; }
+.privacy p, .privacy li { font-size: 14px; line-height: 1.5; color: var(--ink); margin: 0; }
+.privacy ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.privacy-lead { color: var(--ink-2) !important; }
+.privacy-date { font-size: 12px !important; margin-top: 8px !important; }
+.home-foot { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; margin: 36px 0 12px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; }

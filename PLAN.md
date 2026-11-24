@@ -162,9 +162,11 @@ autre couleur et voir la différence entre deux versions.
   compte Apple Developer 99 $/an, compte Google Play 25 $, politique de confidentialité, validation Apple).
 
 ## Étape 9 — Finitions
-- Temps de chargement, qualité graphique adaptée à l'appareil.
-- Catalogue élargi (cuisine, salle de bain, bureau), toujours en CC0.
-
+- ✅ Exporter une image haute définition de la vue (bandeau avec le nom du projet).
+- ✅ Plan PDF A4 à l'échelle avec cotes (dimensions intérieures, position des ouvertures),
+  meubles numérotés, légende (dimensions, statut, prix), couleurs des murs, sol et budget.
+- ✅ Page « Confidentialité et données ».
+- À faire : mentions légales (identité de l'éditeur à fournir), plan PDF de l'appartement entier.
 ## Points d'attention
 - Licence : uniquement des modèles et textures CC0 ; noter la source de chacun.
 - Performance : garder chaque modèle léger pour les téléphones et l'iPad.

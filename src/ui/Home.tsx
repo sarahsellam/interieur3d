@@ -10,6 +10,8 @@ import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
 import { AccountCard } from './Account'
+import { ExportPanel } from './Export'
+import { PrivacyPage } from './Privacy'
 import { useGuide } from './Guide'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
 import { Plan2D } from './Plan2D'
@@ -30,6 +32,9 @@ export function Home() {
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
   const [showInspi, setShowInspi] = useState(false)
+  const [pdfFor, setPdfFor] = useState<string | null>(null)
+  const [privacy, setPrivacy] = useState(false)
+  const pdfProject = projects.find((x) => x.id === pdfFor)
   const threeD = useStore((s) => s.threeD)
   // Retour à l'accueil : le guide de prise en main s'arrête
   useEffect(() => useGuide.getState().go(null), [])
@@ -150,6 +155,9 @@ export function Home() {
                                 >
                                   {Icon.share} Partager pour avoir un avis
                                 </button>
+                                <button type="button" role="menuitem" onClick={() => (setMenuId(null), setPdfFor(p.id))}>
+                                  {Icon.download} Plan PDF avec les cotes
+                                </button>
                                 <button type="button" role="menuitem" className="danger" onClick={() => setConfirmId(p.id)}>
                                   {Icon.trash} Supprimer le projet
                                 </button>
@@ -179,6 +187,20 @@ export function Home() {
       </section>
 
       <BackupSection />
+      {pdfProject && (
+        <ExportPanel
+          onClose={() => setPdfFor(null)}
+          name={pdfProject.name}
+          layout={pdfProject.versions.find((v) => v.id === pdfProject.activeVersionId) ?? pdfProject.versions[0]}
+        />
+      )}
+      <footer className="home-foot">
+        <button type="button" className="link-btn" onClick={() => setPrivacy(true)}>
+          Confidentialité et données
+        </button>
+        <span className="muted">Mon Intérieur 3D · modèles 3D Poly Haven (CC0)</span>
+      </footer>
+      {privacy && <PrivacyPage onClose={() => setPrivacy(false)} />}
     </div>
   )
 }
