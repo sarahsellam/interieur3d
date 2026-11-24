@@ -168,7 +168,8 @@ export interface Overlap {
 
 /** Liste les chevauchements gênants (le tapis et les chaises rangées sous une table sont permis). */
 export function findOverlaps(layout: Layout): Overlap[] {
-  const items = layout.items.filter((it) => !getItem(it.modelId)?.floorLayer)
+  // Les objets posés sur un meuble ne le « chevauchent » pas
+  const items = layout.items.filter((it) => !getItem(it.modelId)?.floorLayer && !it.onTop)
   const out: Overlap[] = []
   const rects = items.map(itemRect)
   for (let i = 0; i < items.length; i++) {
@@ -246,4 +247,29 @@ export function budgetOf(layout: Layout, priceOf: (it: PlacedItem) => number | n
     else total += p
   }
   return { total, toBuy, owned, missing }
+}
+
+// ---------- Objets posés sur un meuble ----------
+
+/** Hauteur du plateau d'un meuble (là où l'on pose un objet). */
+export function surfaceHeight(it: PlacedItem): number {
+  const c = getItem(it.modelId)
+  const d = itemDims(it)
+  const base = c?.base ?? it.modelId
+  if (base === 'coiffeuse') return d.height >= 1.05 ? Math.min(0.76, d.height * 0.55) : d.height
+  if (base === 'lit_double' || base === 'lit_simple') return 0.56
+  if (c?.category === 'assise') return Math.min(0.47, d.height)
+  return d.height
+}
+
+/** Hauteur à laquelle dessiner un objet « posé sur un meuble » : le plateau du meuble sous lui. */
+export function supportHeight(layout: Layout, it: PlacedItem): number {
+  if (!it.onTop) return 0
+  let best = 0
+  for (const o of layout.items) {
+    if (o.uid === it.uid || o.onTop || getItem(o.modelId)?.floorLayer) continue
+    const h = halfExtents(o)
+    if (Math.abs(it.x - o.x) <= h.hx && Math.abs(it.z - o.z) <= h.hz) best = Math.max(best, surfaceHeight(o))
+  }
+  return best
 }

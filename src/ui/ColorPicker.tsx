@@ -7,6 +7,7 @@ import type { Layout, WallSide } from '../model/types'
 import { WALL_LABEL, WALL_ORDER } from '../model/types'
 import { useStore } from '../store'
 import { Icon } from './common'
+import { colorName } from '../data/finishes'
 
 const hex = (r: number, g: number, b: number) => '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')
 
@@ -18,15 +19,17 @@ const isDark = (h: string) => {
 
 type Target = WallSide | 'tous'
 
-export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClose: () => void }) {
+/** Pipette sur une photo (imageId), ou essai direct d'une couleur déjà choisie (initialColor, ex. pastille de la palette). */
+export function PhotoColorPicker({ imageId, initialColor, onClose }: { imageId?: string; initialColor?: string; onClose: () => void }) {
   const layout = useStore((s) => s.layout)
   const setLayoutPreview = useStore((s) => s.setLayoutPreview)
   const setWallColor = useStore((s) => s.setWallColor)
   const setAll = useStore((s) => s.setAllWallsColor)
   const [url, setUrl] = useState<string | null>(null)
-  const [color, setColor] = useState<string | null>(null)
+  const [color, setColor] = useState<string | null>(initialColor ?? null)
   const [mark, setMark] = useState<{ x: number; y: number } | null>(null)
-  const [stage, setStage] = useState<'pick' | 'wall'>('pick')
+  const [stage, setStage] = useState<'pick' | 'wall'>(initialColor ? 'wall' : 'pick')
+  const picking = useRef(false)
   const [target, setTarget] = useState<Target | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const canvas = useRef<HTMLCanvasElement | null>(null)
@@ -39,7 +42,7 @@ export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClos
 
   useEffect(() => {
     let alive = true
-    imageUrl(imageId).then((u) => alive && setUrl(u))
+    if (imageId) imageUrl(imageId).then((u) => alive && setUrl(u))
     return () => {
       alive = false
     }
@@ -62,8 +65,8 @@ export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClos
     const c = canvas.current
     if (!img || !c) return
     const r = img.getBoundingClientRect()
-    const px = ((e.clientX - r.left) / r.width) * c.width
-    const py = ((e.clientY - r.top) / r.height) * c.height
+    const px = Math.max(0, Math.min(c.width - 1, ((e.clientX - r.left) / r.width) * c.width))
+    const py = Math.max(0, Math.min(c.height - 1, ((e.clientY - r.top) / r.height) * c.height))
     // Moyenne d'un petit carré autour du doigt (évite un pixel isolé)
     const s = 4
     const x0 = Math.max(0, Math.floor(px - s))
@@ -81,7 +84,11 @@ export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClos
       B += d[i + 2]
     }
     setColor(hex(R / n, G / n, B / n))
-    setMark({ x: e.clientX - r.left, y: e.clientY - r.top })
+    // Repère placé dans le cadre de la photo (l'image y est centrée)
+    const box = img.parentElement!.getBoundingClientRect()
+    const cx = Math.max(r.left, Math.min(r.right, e.clientX))
+    const cy = Math.max(r.top, Math.min(r.bottom, e.clientY))
+    setMark({ x: cx - box.left, y: cy - box.top })
   }
 
   /** Aperçu dans la pièce, sans rien enregistrer. */
@@ -105,6 +112,8 @@ export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClos
     setLayoutPreview(null)
     restoreView()
     setTarget(null)
+    // Couleur venue de la palette : annuler referme ; depuis la photo : on revient à la pipette
+    if (!imageId) return onClose()
     setStage('pick')
   }
   const close = () => {
@@ -132,14 +141,31 @@ export function PhotoColorPicker({ imageId, onClose }: { imageId: string; onClos
         <>
           <p className="hint-text">Touchez la photo à l'endroit de la couleur qui vous plaît.</p>
           <div className="picker-photo">
-            {url && <img ref={imgRef} src={url} alt="Photo d'inspiration" onLoad={ready} onPointerDown={pick} draggable={false} crossOrigin="anonymous" />}
+            {url && (
+              <img
+                ref={imgRef}
+                src={url}
+                alt="Photo d'inspiration"
+                onLoad={ready}
+                onPointerDown={(e) => {
+                  picking.current = true
+                  ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+                  pick(e)
+                }}
+                // Glisser le doigt pour affiner la couleur
+                onPointerMove={(e) => picking.current && pick(e)}
+                onPointerUp={() => (picking.current = false)}
+                onPointerCancel={() => (picking.current = false)}
+                draggable={false}
+              />
+            )}
             {mark && color && <span className="picker-mark" style={{ left: mark.x, top: mark.y, background: color }} />}
           </div>
         </>
       )}
       <div className="picker-color">
         <span className="picker-swatch" style={{ background: color ?? 'transparent', color: color && isDark(color) ? '#fff' : 'var(--ink)' }}>
-          {color ? color.toUpperCase() : '—'}
+          {color ? colorName(color) : 'Touchez la photo'}
         </span>
         {stage === 'pick' ? (
           <button type="button" className="btn primary" disabled={!color} onClick={() => setStage('wall')}>

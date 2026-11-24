@@ -3,7 +3,7 @@
 // Grand écran : côte à côte. Téléphone : bascule A / B.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fmtPrice, getItem, itemPrice } from '../data/catalog'
-import { FLOORS } from '../data/finishes'
+import { FLOORS, colorName } from '../data/finishes'
 import { budgetOf } from '../model/geometry'
 import type { Layout } from '../model/types'
 import { WALL_LABEL, WALL_ORDER } from '../model/types'
@@ -15,10 +15,22 @@ import { Plan2D } from './Plan2D'
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 
-/** Ce qui change de A à B, en phrases courtes. */
-export function versionDiff(a: Layout, b: Layout): string[] {
+/** Changement de couleur d'un mur, avec les deux teintes (pour les pastilles). */
+export interface ColorChange {
+  wall: string
+  from: string
+  to: string
+}
+
+/** Changements de couleur des murs de A à B. */
+export function colorChanges(a: Layout, b: Layout): ColorChange[] {
+  return WALL_ORDER.filter((w) => a.wallColors[w].toLowerCase() !== b.wallColors[w].toLowerCase()).map((w) => ({ wall: WALL_LABEL[w], from: a.wallColors[w], to: b.wallColors[w] }))
+}
+
+/** Ce qui change de A à B, en phrases courtes (les couleurs de murs sont à part : colorChanges). */
+export function versionDiff(a: Layout, b: Layout, withColors = true): string[] {
   const out: string[] = []
-  for (const w of WALL_ORDER) if (a.wallColors[w].toLowerCase() !== b.wallColors[w].toLowerCase()) out.push(`${WALL_LABEL[w]} : autre couleur`)
+  if (withColors) for (const c of colorChanges(a, b)) out.push(`${c.wall} : ${colorName(c.from)} → ${colorName(c.to)}`)
   if (a.floorId !== b.floorId) out.push(`Sol : ${FLOORS.find((f) => f.id === b.floorId)?.name ?? 'autre sol'}`)
   const name = (m: string) => getItem(m)?.name ?? 'meuble'
   const inA = new Map(a.items.map((i) => [i.uid, i]))
@@ -30,6 +42,10 @@ export function versionDiff(a: Layout, b: Layout): string[] {
     else if (Math.hypot(o.x - it.x, o.z - it.z) > 0.04 || Math.abs(o.rot - it.rot) > 0.01) out.push(`Déplacé : ${name(it.modelId)}`)
     else if ((o.color ?? '') !== (it.color ?? '')) out.push(`Autre couleur : ${name(it.modelId)}`)
     else if (JSON.stringify(o.textiles ?? {}) !== JSON.stringify(it.textiles ?? {})) out.push(`Linge ou coussins : ${name(it.modelId)}`)
+    else if (o.status !== it.status || (o.price ?? null) !== (it.price ?? null)) {
+      const p = itemPrice(it)
+      out.push(it.status === 'a-acheter' ? `À acheter : ${name(it.modelId)}${p !== null ? ` (${fmtPrice(p)})` : ''}` : `Déjà possédé : ${name(it.modelId)}`)
+    }
   }
   for (const it of a.items) if (!inB.has(it.uid)) out.push(`Retiré : ${name(it.modelId)}`)
   if (JSON.stringify(a.openings) !== JSON.stringify(b.openings)) out.push('Portes ou fenêtres modifiées')
@@ -38,15 +54,25 @@ export function versionDiff(a: Layout, b: Layout): string[] {
   return out
 }
 
-function Budget({ l }: { l: Layout }) {
+function Budget({ l, other, letter }: { l: Layout; other?: Layout; letter: string }) {
   const b = useMemo(() => budgetOf(l, itemPrice), [l])
+  const o = useMemo(() => (other ? budgetOf(other, itemPrice) : null), [other])
+  const delta = o ? Math.round((b.total - o.total) * 100) / 100 : 0
   return (
     <span className="compare-budget">
       À acheter : <strong>{fmtPrice(b.total)}</strong>
       {b.missing > 0 && <span className="muted"> · {b.missing} sans prix</span>}
+      {o && letter === 'B' && (
+        <span className={`budget-delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}`}>
+          {delta === 0 ? 'Même budget que A' : `Version B ${delta > 0 ? '+' : '−'}${fmtPrice(Math.abs(delta))}`}
+        </span>
+      )}
     </span>
   )
 }
+
+/** Pastille de couleur */
+const Dot = ({ hex }: { hex: string }) => <span className="color-dot" style={{ background: hex }} />
 
 export function ComparePanel() {
   const project = useProject()
@@ -54,7 +80,6 @@ export function ComparePanel() {
   const open = useStore((s) => s.compareOpen)
   const setOpen = useStore((s) => s.setCompareOpen)
   const threeD = useStore((s) => s.threeD)
-  const view = useStore((s) => s.view)
   const switchVersion = useStore((s) => s.switchVersion)
   const duplicateVersion = useStore((s) => s.duplicateVersion)
   // Versions à jour : la version ouverte est prise telle qu'elle est à l'écran
@@ -85,6 +110,12 @@ export function ComparePanel() {
     setBusy(true)
     const width = Math.min(1100, Math.round(window.innerWidth * (window.innerWidth > 860 ? 0.5 : 1) * Math.min(2, window.devicePixelRatio || 1)))
     const shots: string[] = []
+    // Vue du dessus : les murs ne se voient pas ; on compare alors en vue 3D (murs et meubles visibles)
+    const fromPlan = useStore.getState().view === 'plan'
+    if (fromPlan) {
+      useStore.getState().setView('3d')
+      await wait(1200)
+    }
     for (const l of [A, B]) {
       useStore.setState({ layoutPreview: l, selection: null })
       await frames()
@@ -92,6 +123,7 @@ export function ComparePanel() {
       shots.push(await captureThumb(width))
     }
     useStore.setState({ layoutPreview: null })
+    if (fromPlan) useStore.getState().setView('plan')
     setImages({ a: shots[0], b: shots[1] })
     setBusy(false)
   }, [A, B, threeD])
@@ -99,7 +131,7 @@ export function ComparePanel() {
   useEffect(() => {
     if (open && !reframe && A && B) void render()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, aId, bId, reframe, view])
+  }, [open, aId, bId, reframe])
 
   if (!open) return null
 
@@ -145,7 +177,8 @@ export function ComparePanel() {
       </div>
     )
 
-  const diff = A && B ? versionDiff(A, B) : []
+  const diff = A && B ? versionDiff(A, B, false) : []
+  const colors = A && B ? colorChanges(A, B) : []
   const side = (key: 'a' | 'b', l: Layout | undefined, setId: (id: string) => void, otherId: string) => (
     <section className={`compare-side ${shown === key ? 'shown' : ''}`}>
       <div className="compare-side-head">
@@ -160,9 +193,19 @@ export function ComparePanel() {
       </div>
       <div className={`compare-image ${images && !busy && threeD ? 'has-img' : ''}`}>
         {!threeD && l ? <Plan2D layout={l} className="compare-plan" /> : images && !busy ? <img src={images[key]} alt={`Rendu de ${l?.name}`} /> : <div className="compare-loading">Préparation de la vue…</div>}
+        {colors.length > 0 && (
+          // Couleurs des murs qui changent, posées sur l'aperçu
+          <div className="compare-badges">
+            {colors.map((c) => (
+              <span key={c.wall} className="compare-badge">
+                <Dot hex={key === 'a' ? c.from : c.to} /> {c.wall} · {colorName(key === 'a' ? c.from : c.to)}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="compare-side-foot">
-        {l && <Budget l={l} />}
+        {l && <Budget l={l} other={key === 'b' ? A : undefined} letter={key.toUpperCase()} />}
         {l && l.id !== layout.id && (
           <button
             type="button"
@@ -204,6 +247,15 @@ export function ComparePanel() {
         <div className="compare-foot">
           <div className="compare-diff">
             <strong>Ce qui change de A à B</strong>
+            {colors.length > 0 && (
+              <ul className="color-changes">
+                {colors.map((c) => (
+                  <li key={c.wall}>
+                    <strong>{c.wall}</strong> <Dot hex={c.from} /> {colorName(c.from)} <span className="arrow">→</span> <Dot hex={c.to} /> {colorName(c.to)}
+                  </li>
+                ))}
+              </ul>
+            )}
             {diff.length ? (
               <ul>
                 {diff.slice(0, 6).map((d, i) => (
@@ -212,7 +264,7 @@ export function ComparePanel() {
                 {diff.length > 6 && <li className="muted">et {diff.length - 6} autre{diff.length > 7 ? 's' : ''} changement{diff.length > 7 ? 's' : ''}</li>}
               </ul>
             ) : (
-              <p className="muted">Les deux versions sont identiques.</p>
+              colors.length === 0 && <p className="muted">Les deux versions sont identiques.</p>
             )}
           </div>
           {threeD && (

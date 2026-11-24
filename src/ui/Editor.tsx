@@ -1,7 +1,9 @@
 // Éditeur « Mon aménagement » : la pièce au centre, les outils autour.
 import { useEffect, useMemo, useState } from 'react'
 import { useProgress } from '@react-three/drei'
-import { CATALOG, CATEGORY_LABELS, ITEM_COLORS, fmtPrice, getItem, itemPrice, type FurnitureCategory } from '../data/catalog'
+import { CATALOG, CATEGORY_LABELS, ITEM_COLORS, REFERENCE_ITEMS, customToCatalog, fmtPrice, getItem, itemPrice, type CatalogItem, type FurnitureCategory } from '../data/catalog'
+import { ART, artUrl } from '../data/art'
+import { fold } from '../data/facets'
 import { FLOORS, WALL_COLORS, floorTexture } from '../data/finishes'
 import { budgetOf, itemDims, overlapsOf, wallLength } from '../model/geometry'
 import { OPENING_LABEL, VIEW_LABEL, WALL_LABEL, WALL_ORDER, type Opening, type OpeningKind, type ViewMode, type WallSide } from '../model/types'
@@ -11,6 +13,7 @@ import { SharePanel } from './Share'
 import { ExportPanel } from './Export'
 import { CompareButton, ComparePanel } from './Compare'
 import { Guide } from './Guide'
+import { isSmall } from '../model/clearance'
 import { DecorControls, DecorSection, TextilesPanel, textileKind } from './Decor'
 import { PassagesCard, PassagesChip } from './Passages'
 import { No3DCauses, VisitVideoButton } from './VisitVideo'
@@ -269,43 +272,131 @@ function TopBar() {
 
 // ---------------------------------------------------------------- Panneau latéral
 
+function CatalogCard({ c, onAdd }: { c: CatalogItem; onAdd: () => void }) {
+  return (
+    <button type="button" className="card" onClick={onAdd} aria-label={`Ajouter : ${c.name}`}>
+      <span className="card-img">
+        <ItemThumb c={c} />
+        <span className="card-plus" aria-hidden>
+          {Icon.plus}
+        </span>
+      </span>
+      <span className="card-name">{c.name}</span>
+      <span className="card-dims">
+        {Math.round(c.width * 100)} × {Math.round(c.depth * 100)} × {Math.round(c.height * 100)} cm
+      </span>
+      {typeof c.price === 'number' && (
+        <span className="card-price">
+          {fmtPrice(c.price)} · {c.vendor}
+        </span>
+      )}
+    </button>
+  )
+}
+
+const SHORTCUTS: { id: string; label: string }[] = [
+  { id: 'mes-meubles', label: 'Mes meubles' },
+  ...(Object.keys(CATEGORY_LABELS) as FurnitureCategory[]).map((c) => ({ id: c, label: CATEGORY_LABELS[c].split(' ')[0] })),
+  { id: 'tableaux', label: 'Tableaux' },
+  { id: 'produits', label: 'Produits du commerce' },
+]
+
 function Catalog({ onAdded }: { onAdded: () => void }) {
   const addItem = useStore((s) => s.addItem)
+  const addDecor = useStore((s) => s.addDecor)
+  const myFurniture = useStore((s) => s.myFurniture)
+  const place = useStore((s) => s.placeMyFurniture)
+  const [q, setQ] = useState('')
   const cats = Object.keys(CATEGORY_LABELS) as FurnitureCategory[]
+  const add = (id: string) => {
+    addItem(id)
+    onAdded()
+  }
+  const go = (id: string) => document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  // Recherche : catalogue, produits du commerce, mes meubles et tableaux, sans tenir compte des accents
+  const query = fold(q.trim())
+  const results = useMemo(() => {
+    if (!query) return null
+    const words = query.split(/\s+/)
+    const match = (text: string) => words.every((w) => fold(text).includes(w))
+    const items = [...CATALOG, ...REFERENCE_ITEMS].filter((c) => match(`${c.name} ${c.kind ?? ''} ${CATEGORY_LABELS[c.category]} ${c.vendor ?? ''}`))
+    const mine = myFurniture.filter((f) => match(`${f.name} ${f.vendor ?? ''} ${CATEGORY_LABELS[f.category]}`))
+    const art = ART.filter((a) => match(`${a.name} tableau affiche cadre`))
+    return { items, mine, art }
+  }, [query, myFurniture])
+
   return (
     <div className="catalog">
-      <MyFurnitureSection />
-      {cats.map((cat) => (
-        <section key={cat}>
-          <h3>{CATEGORY_LABELS[cat]}</h3>
+      <div className="catalog-search">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher : commode, plante, MALM…" aria-label="Rechercher un meuble" enterKeyHint="search" />
+        {q && (
+          <button type="button" className="icon-btn small" onClick={() => setQ('')} aria-label="Effacer la recherche">
+            {Icon.close}
+          </button>
+        )}
+      </div>
+      {!results && (
+        <div className="catalog-shortcuts" role="navigation" aria-label="Catégories">
+          {SHORTCUTS.map((s) => (
+            <button key={s.id} type="button" className="chip" onClick={() => go(s.id)}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {results ? (
+        <section>
+          <h3>
+            {results.items.length + results.mine.length + results.art.length} résultat{results.items.length + results.mine.length + results.art.length > 1 ? 's' : ''}
+          </h3>
+          {results.items.length + results.mine.length + results.art.length === 0 && <p className="empty">Rien ne correspond à « {q} ». Essayez un autre mot, ou « Ajouter depuis un lien ».</p>}
           <div className="cards">
-            {CATALOG.filter((c) => c.category === cat).map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="card"
-                onClick={() => {
-                  addItem(c.id)
-                  onAdded()
-                }}
-                aria-label={`Ajouter : ${c.name}`}
-              >
-                <span className="card-img">
-                  <ItemThumb c={c} />
-                  <span className="card-plus" aria-hidden>
-                    {Icon.plus}
-                  </span>
+            {results.mine.map((f) => (
+              <CatalogCard key={f.id} c={customToCatalog(f)} onAdd={() => (place(f.id), onAdded())} />
+            ))}
+            {results.items.map((c) => (
+              <CatalogCard key={c.id} c={c} onAdd={() => add(c.id)} />
+            ))}
+            {results.art.map((a) => (
+              <button key={a.id} type="button" className="card" onClick={() => (addDecor(a.id), onAdded())} aria-label={`Accrocher : ${a.name}`}>
+                <span className="card-img art-img">
+                  <img src={artUrl(a.id, true)} alt="" loading="lazy" />
                 </span>
-                <span className="card-name">{c.name}</span>
-                <span className="card-dims">
-                  {Math.round(c.width * 100)} × {Math.round(c.depth * 100)} × {Math.round(c.height * 100)} cm
-                </span>
+                <span className="card-name">Tableau · {a.name}</span>
               </button>
             ))}
           </div>
         </section>
-      ))}
-      <DecorSection onAdded={onAdded} />
+      ) : (
+        <>
+          <div id="cat-mes-meubles">
+            <MyFurnitureSection />
+          </div>
+          {cats.map((cat) => (
+            <section key={cat} id={`cat-${cat}`}>
+              <h3>{CATEGORY_LABELS[cat]}</h3>
+              <div className="cards">
+                {CATALOG.filter((c) => c.category === cat).map((c) => (
+                  <CatalogCard key={c.id} c={c} onAdd={() => add(c.id)} />
+                ))}
+              </div>
+            </section>
+          ))}
+          <div id="cat-tableaux">
+            <DecorSection onAdded={onAdded} />
+          </div>
+          <section id="cat-produits">
+            <h3>Produits du commerce</h3>
+            <p className="hint-text">Vrais meubles, avec prix relevés et lien vers le vendeur.</p>
+            <div className="cards">
+              {REFERENCE_ITEMS.map((c) => (
+                <CatalogCard key={c.id} c={c} onAdd={() => add(c.id)} />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
       <p className="credits">
         Modèles 3D et textures : <a href="https://polyhaven.com" target="_blank" rel="noreferrer">Poly Haven</a> (licence CC0).
       </p>
@@ -540,6 +631,14 @@ function ItemControls({ id }: { id: string }) {
           </span>
         )}
       </div>
+      {(isSmall(item) || c.category === 'deco') && !c.floorLayer && (
+        <label className="ontop-toggle">
+          <input type="checkbox" checked={!!item.onTop} onChange={(e) => useStore.getState().setOnTop(item.uid, e.target.checked)} />
+          <span>
+            Posé sur un meuble <span className="muted">(ne gêne pas le passage)</span>
+          </span>
+        </label>
+      )}
       <div className="tool-row">
         <button type="button" className="tool" onClick={() => setReplacing(true)}>
           {Icon.swap}
@@ -728,9 +827,14 @@ function OpeningControls({ id }: { id: string }) {
 
 function SelectionSheet() {
   const selection = useStore((s) => s.selection)
+  // Fiche réduite à son titre, pour voir la pièce en entier
+  const [min, setMin] = useState(false)
   if (!selection) return null
   return (
-    <div className="selection-sheet" role="region" aria-label="Élément sélectionné">
+    <div className={`selection-sheet ${min ? 'min' : ''}`} role="region" aria-label="Élément sélectionné">
+      <button type="button" className="icon-btn small sheet-min" onClick={() => setMin(!min)} aria-label={min ? 'Agrandir la fiche' : 'Réduire la fiche'} title={min ? 'Agrandir' : 'Réduire'}>
+        {Icon.chevron}
+      </button>
       {selection.type === 'item' && <ItemControls key={selection.id} id={selection.id} />}
       {selection.type === 'wall' && <WallControls side={selection.id} />}
       {selection.type === 'opening' && <OpeningControls key={selection.id} id={selection.id} />}
@@ -749,14 +853,27 @@ function OverlapBanner() {
   if (!overlaps.length || dragging) return null
   const first = overlaps[0]
   const target = first.a.kind === 'item' ? first.a : first.b
+  // Un petit objet (plante, lampe…) sur un meuble : on propose de le « poser dessus »
+  const small = [first.a, first.b]
+    .filter((r) => r.kind === 'item')
+    .map((r) => layout.items.find((i) => i.uid === r.id))
+    .find((it) => it && isSmall(it))
+  const other = small && [first.a, first.b].find((r) => r.id !== small.uid)
   return (
-    <button type="button" className="overlap-banner" onClick={() => select({ type: 'item', id: target.id })}>
-      {Icon.alert}
-      <span>
-        <strong>{first.a.label}</strong> chevauche <strong>{first.b.label.toLowerCase()}</strong>
-        {overlaps.length > 1 && <span className="muted"> · {overlaps.length - 1} autre{overlaps.length > 2 ? 's' : ''}</span>}
-      </span>
-    </button>
+    <div className="overlap-banner" role="status">
+      <button type="button" className="overlap-main" onClick={() => select({ type: 'item', id: target.id })}>
+        {Icon.alert}
+        <span>
+          <strong>{first.a.label}</strong> chevauche <strong>{first.b.label.toLowerCase()}</strong>
+          {overlaps.length > 1 && <span className="muted"> · {overlaps.length - 1} autre{overlaps.length > 2 ? 's' : ''}</span>}
+        </span>
+      </button>
+      {small && other?.kind === 'item' && (
+        <button type="button" className="chip" onClick={() => useStore.getState().setOnTop(small.uid, true)}>
+          Poser sur {other.label.toLowerCase().split(',')[0]}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -784,13 +901,11 @@ function No3DNotice() {
   if (threeD || hidden) return null
   return (
     <div className="no3d-notice" role="status">
-      <span>
-        <strong>3D indisponible sur ce navigateur.</strong> Le plan reste utilisable : touchez un meuble pour le déplacer ou le remplacer.
-        <span className="no3d-links">
-          <VisitVideoButton className="chip" label="Voir la visite en vidéo" />
-          <No3DCauses />
-        </span>
+      <span className="no3d-text">
+        <strong>3D indisponible</strong> <span className="no3d-more">sur ce navigateur · le plan reste utilisable</span>
       </span>
+      <VisitVideoButton className="chip" label="Vidéo" />
+      <No3DCauses />
       <button type="button" className="icon-btn small" onClick={() => setHidden(true)} aria-label="Masquer">
         {Icon.close}
       </button>
@@ -884,10 +999,17 @@ export function EditorUI() {
       {ideaOpen && <IdeaPanel onClose={() => setIdeaOpen(false)} />}
       <TopBar />
       <SidePanel />
-      <No3DNotice />
-      <OverlapBanner />
-      <SnapChips />
-      <PassagesCard />
+      {/* Bandeaux du haut, empilés dans un même conteneur : ils ne se recouvrent jamais */}
+      <div className="hud">
+        <div className="hud-row">
+          <OverlapBanner />
+          <SnapChips />
+        </div>
+        <div className="hud-col">
+          <No3DNotice />
+          <PassagesCard />
+        </div>
+      </div>
       <PinnedImage />
       <SelectionSheet />
       <EyeLevelHint />

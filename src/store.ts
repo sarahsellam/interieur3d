@@ -64,6 +64,13 @@ interface State {
   /** Mesures de passage et zones d'ouverture affichées */
   passages: boolean
   setPassages: (v: boolean) => void
+  /** Passage ou zone mis en évidence (touché dans la liste) */
+  passageFocus: string | null
+  setPassageFocus: (k: string | null) => void
+  /** Point de la pièce à garder visible à l'écran (meuble sélectionné, passage touché) */
+  focusPoint: { x: number; z: number; y: number; n: number } | null
+  showPoint: (x: number, z: number, y?: number) => void
+  setOnTop: (id: string, v: boolean) => void
   /** Comparatif de deux versions ouvert */
   compareOpen: boolean
   setCompareOpen: (v: boolean) => void
@@ -234,7 +241,12 @@ export const useStore = create<State>()((set, get) => {
     shareOpen: false,
     compareOpen: false,
     passages: false,
-    setPassages: (passages) => set({ passages }),
+    setPassages: (passages) => set({ passages, passageFocus: null }),
+    passageFocus: null,
+    setPassageFocus: (passageFocus) => set({ passageFocus }),
+    focusPoint: null,
+    showPoint: (x, z, y = 0.4) => set({ focusPoint: { x, z, y, n: Date.now() } }),
+    setOnTop: (id, v) => edit(`dessus-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.onTop = v || undefined))),
     setCompareOpen: (compareOpen) => set({ compareOpen, selection: null }),
     setShareOpen: (shareOpen) => set({ shareOpen }),
     openShare: (shareId) => {

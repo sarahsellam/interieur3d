@@ -16,6 +16,7 @@ import { PlanOverlay } from './PlanOverlay'
 import { ClearanceOverlay } from './ClearanceOverlay'
 import { CaptureHelper } from './capture'
 import { GuideProbe } from './GuideProbe'
+import { KeepVisible } from './KeepVisible'
 import { CEILING_LAMP, assetUrl } from '../data/catalog'
 
 /** Lumière naturelle : soleil et ciel entrant par les fenêtres, ambiance douce. */
@@ -246,7 +247,7 @@ function Effects({ quality }: { quality: 'high' | 'low' }) {
   )
 }
 
-export function Scene({ quality, video }: { quality: 'high' | 'low'; video?: boolean }) {
+export function Scene({ quality, video, children }: { quality: 'high' | 'low'; video?: boolean; children?: React.ReactNode }) {
   const select = useStore((s) => s.select)
   return (
     <Canvas
@@ -273,6 +274,8 @@ export function Scene({ quality, video }: { quality: 'high' | 'low'; video?: boo
       <Effects quality={quality} />
       <CaptureHelper />
       <GuideProbe />
+      <KeepVisible />
+      {children}
     </Canvas>
   )
 }

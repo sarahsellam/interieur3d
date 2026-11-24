@@ -8,7 +8,7 @@ import { itemDims, openingCenter, openingDepth, overlapsOf, wallAxes } from '../
 import type { Layout, Opening, PlacedItem, WallSide } from '../model/types'
 import { WALL_LABEL, WALL_ORDER } from '../model/types'
 import { useStore } from '../store'
-import { findGaps, openingZones } from '../model/clearance'
+import { useClearance } from './clearanceView'
 
 const T = 0.12 // épaisseur des murs dessinés
 const INK = '#292321'
@@ -202,9 +202,10 @@ export function Plan2D({ layout, interactive = false, className }: { layout: Lay
       {/* Couleur de chaque mur : liseré côté pièce */}
       {WALL_ORDER.map((w) => {
         const ax = wallAxes(layout.room, w)
-        const a = add(ax.a as V, ax.inward as V, 0.025)
-        const b = add(ax.b as V, ax.inward as V, 0.025)
-        return <line key={w} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={layout.wallColors[w]} strokeWidth={0.05} />
+        // Liseré bien visible : le changement de couleur d'un mur se voit aussi sur le plan
+        const a = add(ax.a as V, ax.inward as V, 0.045)
+        const b = add(ax.b as V, ax.inward as V, 0.045)
+        return <line key={w} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={layout.wallColors[w]} strokeWidth={0.09} />
       })}
       {interactive &&
         WALL_ORDER.map((w: WallSide) => {
@@ -285,19 +286,20 @@ const COMFORT_FILL = { etroit: '#b23b2e', juste: '#c98a1b', ok: '#44634d' } as c
 /** Passages et zones d'ouverture, sur le plan dessiné (sans 3D). */
 function ClearanceSvg({ layout }: { layout: Layout }) {
   const on = useStore((s) => s.passages)
-  const gaps = useMemo(() => (on ? findGaps(layout) : []), [on, layout])
-  const zones = useMemo(() => (on ? openingZones(layout) : []), [on, layout])
-  if (!on) return null
+  const selection = useStore((s) => s.selection)
+  const focus = useStore((s) => s.passageFocus)
+  const { gaps, zones } = useClearance(layout, on, selection)
+  if (!gaps.length && !zones.length) return null
   return (
     <g style={{ pointerEvents: 'none' }}>
       {zones.map((z) => (
         <polygon
-          key={z.item.uid}
+          key={z.key}
           points={z.corners.map((p) => p.join(',')).join(' ')}
-          fill={z.blockedBy ? 'rgba(178,59,46,.22)' : 'rgba(116,47,69,.1)'}
+          fill={z.blockedBy ? `rgba(178,59,46,${focus === z.key ? 0.4 : 0.22})` : `rgba(116,47,69,${focus === z.key ? 0.3 : 0.1})`}
           stroke={z.blockedBy ? '#b23b2e' : BORD}
-          strokeWidth={0.015}
-          strokeDasharray="0.06 0.04"
+          strokeWidth={focus === z.key ? 0.04 : 0.015}
+          strokeDasharray={focus === z.key ? undefined : '0.06 0.04'}
         />
       ))}
       {gaps.map((g) => {
@@ -307,7 +309,8 @@ function ClearanceSvg({ layout }: { layout: Layout }) {
         const label = `${Math.round(g.length * 100)} cm`
         return (
           <g key={g.key}>
-            <line x1={g.from[0]} y1={g.from[1]} x2={g.to[0]} y2={g.to[1]} stroke={c} strokeWidth={0.025} />
+            <line x1={g.from[0]} y1={g.from[1]} x2={g.to[0]} y2={g.to[1]} stroke={c} strokeWidth={focus === g.key ? 0.06 : 0.025} />
+            {focus === g.key && <circle cx={mx} cy={mz} r={0.3} fill="none" stroke={c} strokeWidth={0.03} />}
             <rect x={mx - 0.21} y={mz - 0.08} width={0.42} height={0.16} rx={0.08} fill={c} />
             <text x={mx} y={mz + 0.045} textAnchor="middle" fontSize={0.12} fontWeight={700} fill="#fff" style={{ fontFamily: 'Inter, sans-serif' }}>
               {label}

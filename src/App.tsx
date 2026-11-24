@@ -11,6 +11,7 @@ import { useStore } from './store'
 import { usePlanStore } from './planStore'
 import { startAutoSync } from './model/account'
 import { ShareViewer } from './ui/Share'
+import { Diagnostic } from './ui/Diagnostic'
 import { ApartmentScreen } from './ui/Apartment'
 import { shareIdFromHash } from './model/share'
 import { OfflineBadge, UpdateBanner, requestPersistentStorage } from './ui/AppShell'
@@ -62,6 +63,8 @@ export default function App() {
   if (new URLSearchParams(location.search).has('vitrine')) return <Vitrine />
   // Mode spécial (?video) : tournage de la vidéo de visite (caméra pilotée par le script d'enregistrement)
   if (new URLSearchParams(location.search).has('video')) return <VideoStudio />
+  // Test de la 3D sur cet appareil (?diagnostic)
+  if (new URLSearchParams(location.search).has('diagnostic')) return <Diagnostic />
   return (
     <>
       <UpdateBanner />

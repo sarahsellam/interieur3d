@@ -40,3 +40,23 @@ export const floorTexture = (id: string, kind: 'diff' | 'nor' | 'rough' | 'ao') 
   `${import.meta.env.BASE_URL}textures/${id}_${kind}.webp`
 
 export const texture = (name: string) => `${import.meta.env.BASE_URL}textures/${name}.webp`
+
+/** Nom d'une couleur de mur : nom du nuancier, ou « proche de … » pour une couleur libre. */
+export function colorName(hex: string): string {
+  const h = hex.toLowerCase()
+  const exact = WALL_COLORS.find((c) => c.hex === h)
+  if (exact) return exact.name
+  const rgb = (x: string) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16))
+  const [r, g, b] = rgb(h)
+  let best = WALL_COLORS[0]
+  let bd = Infinity
+  for (const c of WALL_COLORS) {
+    const [R, G, B] = rgb(c.hex)
+    const d = (r - R) ** 2 * 0.3 + (g - G) ** 2 * 0.59 + (b - B) ** 2 * 0.11
+    if (d < bd) {
+      bd = d
+      best = c
+    }
+  }
+  return `proche de ${best.name}`
+}

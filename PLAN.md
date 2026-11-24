@@ -151,6 +151,21 @@ autre couleur et voir la différence entre deux versions.
 - Tableaux aux murs : 8 affiches créées pour l'application ou une photo encadrée ; taille, cadre
   (chêne, noir, blanc, sans), mur et position ; synchronisés et sauvegardés avec le projet.
 
+## Retours de test n°3 (novembre 2026) ✅
+- Comparatif : couleurs des murs nommées avec pastilles (Rose poudré → Sauge), étiquettes sur les
+  aperçus (rendus en 3D même depuis le plan), écart de budget (« Version B +150 € »), achats listés.
+- Passages : petits objets et plantes ignorés, « posé sur un meuble » (dessiné sur le plateau),
+  vis-à-vis minimal de 30 cm, tolérance de 10 cm, portes et placards inclus ; toucher une alerte
+  la met en évidence et recentre la vue ; zones d'ouverture affichées en sélectionnant un meuble,
+  une porte ou un placard.
+- Éditeur : bandeaux du haut empilés sans chevauchement, avis « 3D indisponible » compact, fiche
+  réductible, élément sélectionné toujours visible (la vue glisse), passages repliés sur téléphone.
+- Catalogue : recherche (sans accents), raccourcis de catégories, produits du commerce ; Remplacer :
+  filtres couleur, matière, style, « rentre ici », filtres bloquants affichés et réinitialisables.
+- Inspirations : pipette glissée, nom de la couleur, pastilles de la palette → même aperçu sur un mur.
+- Page « Tester la 3D sur cet appareil » (?diagnostic) : prise en charge, carte graphique,
+  fluidité mesurée, vérification des gestes, résultat à copier.
+
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.

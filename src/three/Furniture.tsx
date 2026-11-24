@@ -5,7 +5,7 @@ import { useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { getItem, assetUrl } from '../data/catalog'
 import { shownLayout, useStore, type PlacedItem } from '../store'
-import { itemDims, overlapsOf } from '../model/geometry'
+import { itemDims, overlapsOf, supportHeight } from '../model/geometry'
 import type { ItemDims, Textiles } from '../model/types'
 import { startDrag } from './drag'
 import { ProceduralModel } from './procedural'
@@ -127,6 +127,8 @@ export function Furniture({ item }: { item: PlacedItem }) {
   const select = useStore((s) => s.select)
   const view = useStore((s) => s.view)
   const controls = useThree((s) => s.controls) as { enabled: boolean } | null
+  // Objet posé sur un meuble : à la hauteur du plateau
+  const y = useStore((s) => (item.onTop ? supportHeight(shownLayout(s), item) : 0))
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     if (e.button !== undefined && e.button !== 0) return
@@ -142,7 +144,7 @@ export function Furniture({ item }: { item: PlacedItem }) {
   }
 
   return (
-    <group position={[item.x, 0, item.z]} rotation-y={item.rot}>
+    <group position={[item.x, y, item.z]} rotation-y={item.rot}>
       <FurnitureShape modelId={item.modelId} dims={item.dims} color={item.color} textiles={item.textiles} onPointerDown={onPointerDown} />
       {(selected || overlapping) && <SelectionOutline width={dims.width} depth={dims.depth} color={overlapping ? '#c0392b' : '#742f45'} />}
       {selected && !dragging && (

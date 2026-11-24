@@ -5,7 +5,9 @@
 // Repères de confort : moins de 60 cm, c'est étroit ; 60 à 90 cm, c'est juste ; 90 cm et plus, c'est confortable.
 import { getItem, type CatalogItem } from '../data/catalog'
 import { halfExtents, itemDims } from './geometry'
-import type { Layout, PlacedItem } from './types'
+import type { Layout, Opening, PlacedItem } from './types'
+import { OPENING_LABEL } from './types'
+import { openingCenter, openingDepth, wallAxes } from './geometry'
 
 export type Comfort = 'etroit' | 'juste' | 'ok'
 export const comfortOf = (m: number): Comfort => (m < 0.6 ? 'etroit' : m < 0.9 ? 'juste' : 'ok')
@@ -23,7 +25,13 @@ export interface Gap {
 }
 
 export interface OpeningZone {
-  item: PlacedItem
+  /** Identifiant : celui du meuble ou de la porte / du placard */
+  key: string
+  /** Meuble concerné (absent pour une porte ou un placard) */
+  item?: PlacedItem
+  opening?: Opening
+  /** « de la commode », « de la porte (Mur 3) » */
+  owner: string
   /** Coins du rectangle au sol, dans l'ordre */
   corners: [number, number][]
   depth: number
@@ -68,10 +76,22 @@ function box(it: PlacedItem) {
   return { minX: it.x - h.hx, maxX: it.x + h.hx, minZ: it.z - h.hz, maxZ: it.z + h.hz }
 }
 
+/** Petit objet qui se déplace à la main (petite plante, objet posé) : il ne crée pas de « passage ». */
+export function isSmall(it: PlacedItem) {
+  const d = itemDims(it)
+  const c = getItem(it.modelId)
+  if (c?.kind === 'plante') return d.width < 0.55 && d.depth < 0.55
+  return d.width < 0.4 && d.depth < 0.4 && d.height < 0.6
+}
+
+/** Meubles qui comptent pour la circulation : ni tapis, ni objets posés sur un meuble, ni petits objets. */
 const counted = (it: PlacedItem) => {
   const c = getItem(it.modelId)
-  return !!c && !c.floorLayer
+  return !!c && !c.floorLayer && !it.onTop && !isSmall(it)
 }
+
+/** Longueur minimale de vis-à-vis pour parler d'un passage (en dessous, les meubles se touchent par un coin). */
+const MIN_FRONT = 0.3
 
 /** Écarts entre meubles voisins : pour chaque meuble et chaque côté, le plus proche en face. */
 export function findGaps(layout: Layout, max = 1.4): Gap[] {
@@ -97,7 +117,7 @@ export function findGaps(layout: Layout, max = 1.4): Gap[] {
       const oz0 = Math.max(A.minZ, B.minZ)
       const oz1 = Math.min(A.maxZ, B.maxZ)
       const mk = (from: [number, number], to: [number, number], length: number): Gap => ({ key: '', a, b, from, to, length, comfort: comfortOf(length) })
-      if (ox1 - ox0 > 0.12) {
+      if (ox1 - ox0 > MIN_FRONT) {
         const mx = (ox0 + ox1) / 2
         if (B.minZ >= A.maxZ - 0.001 && B.minZ - A.maxZ <= max) {
           const g = mk([mx, A.maxZ], [mx, B.minZ], B.minZ - A.maxZ)
@@ -108,7 +128,7 @@ export function findGaps(layout: Layout, max = 1.4): Gap[] {
           if (!near.nz || g.length < near.nz.length) near.nz = g
         }
       }
-      if (oz1 - oz0 > 0.12) {
+      if (oz1 - oz0 > MIN_FRONT) {
         const mz = (oz0 + oz1) / 2
         if (B.minX >= A.maxX - 0.001 && B.minX - A.maxX <= max) {
           const g = mk([A.maxX, mz], [B.minX, mz], B.minX - A.maxX)
@@ -180,17 +200,73 @@ export function openingZones(layout: Layout): OpeningZone[] {
     const corners = local.map(([x, zz]) => [it.x + x * cs + zz * sn, it.z - x * sn + zz * cs] as [number, number])
     let blockedBy: string | null = null
     if (corners.some(([x, zz]) => Math.abs(x) > W + 0.01 || Math.abs(zz) > D + 0.01)) blockedBy = 'le mur'
-    for (const o of layout.items) {
-      if (blockedBy || o.uid === it.uid) continue
-      const oc = getItem(o.modelId)
-      // Un tapis ne gêne pas ; une chaise ou un tabouret devant une table ou une coiffeuse non plus
-      if (!oc || oc.floorLayer || (oc.tucksUnder && c.hostsUnder)) continue
-      if (polysOverlap(corners, footprint(o))) blockedBy = withArticle(o)
-    }
-    out.push({ item: it, corners, depth: z.depth, label: z.label, blockedBy })
+    blockedBy ??= blocker(layout, corners, it.uid, !!c.hostsUnder)
+    out.push({ key: it.uid, item: it, owner: ofArticle(withArticle(it)), corners, depth: z.depth, label: z.label, blockedBy })
+  }
+  for (const o of layout.openings) {
+    const z = openingZone(layout, o)
+    if (z) out.push(z)
   }
   return out
 }
+
+/** Rectangle rétréci de « d » sur chaque bord (tolérance : on ne signale pas quelques centimètres). */
+function shrink(c: [number, number][], d: number): [number, number][] {
+  const [p0, p1, , p3] = c
+  const l1 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1
+  const l2 = Math.hypot(p3[0] - p0[0], p3[1] - p0[1]) || 1
+  const u: [number, number] = [(p1[0] - p0[0]) / l1, (p1[1] - p0[1]) / l1]
+  const v: [number, number] = [(p3[0] - p0[0]) / l2, (p3[1] - p0[1]) / l2]
+  const du = Math.min(d, l1 / 3)
+  const dv = Math.min(d, l2 / 3)
+  const sg: [number, number][] = [[1, 1], [-1, 1], [-1, -1], [1, -1]]
+  return c.map((p, i) => [p[0] + u[0] * du * sg[i][0] + v[0] * dv * sg[i][1], p[1] + u[1] * du * sg[i][0] + v[1] * dv * sg[i][1]])
+}
+
+/** Premier meuble qui empiète sur une zone (les tapis, objets posés et petits objets ne gênent pas ; 10 cm de tolérance). */
+function blocker(layout: Layout, zone: [number, number][], except: string | null, hostsUnder = false): string | null {
+  const corners = shrink(zone, 0.1)
+  for (const o of layout.items) {
+    if (o.uid === except || o.onTop) continue
+    const oc = getItem(o.modelId)
+    // Un tapis ne gêne pas ; une chaise ou un tabouret devant une table ou une coiffeuse non plus
+    if (!oc || oc.floorLayer || (oc.tucksUnder && hostsUnder) || isSmall(o)) continue
+    if (polysOverlap(corners, footprint(o))) return withArticle(o)
+  }
+  return null
+}
+
+/** Zone de débattement d'une porte (ou porte-fenêtre) qui s'ouvre vers la pièce, ou devant un placard. */
+export function openingZone(layout: Layout, o: Opening): OpeningZone | null {
+  const room = layout.room
+  const ax = wallAxes(room, o.wall)
+  const c = openingCenter(room, o)
+  const dir = ax.dir
+  const inw = ax.inward
+  let depth = 0
+  let label = ''
+  if (o.kind === 'porte' && (o.swing ?? 'interieur') === 'interieur') {
+    depth = o.width
+    label = 'ouverture de la porte'
+  } else if (o.kind === 'porte-fenetre' && (o.swing ?? 'interieur') === 'interieur') {
+    depth = o.width / 2
+    label = 'ouverture de la porte-fenêtre'
+  } else if (o.kind === 'placard') {
+    // Portes battantes du placard (environ la moitié de la largeur d'une porte) devant sa façade
+    depth = Math.min(0.55, o.width / 4 + 0.15)
+    label = 'ouverture du placard'
+  } else return null
+  const start = o.kind === 'placard' ? openingDepth(o) : 0
+  const P = (u: number, n: number): [number, number] => [c.x + dir[0] * u + inw[0] * n, c.z + dir[1] * u + inw[1] * n]
+  const corners = [P(-o.width / 2, start), P(o.width / 2, start), P(o.width / 2, start + depth), P(-o.width / 2, start + depth)]
+  return { key: o.id, opening: o, owner: '', corners, depth, label: label || OPENING_LABEL[o.kind], blockedBy: blocker(layout, corners, null) }
+}
+
+/** « le lit » → « du lit », « la commode » → « de la commode », « l'étagère » → « de l'étagère » */
+export const ofArticle = (s: string) => (s.startsWith('le ') ? 'du ' + s.slice(3) : 'de ' + s)
+
+/** Phrase d'une zone gênée : « Ouverture des tiroirs de la commode : gênée par le lit double » */
+export const zoneSentence = (z: OpeningZone) => `${z.label.charAt(0).toUpperCase() + z.label.slice(1)}${z.owner ? ' ' + z.owner : ''} : gênée par ${z.blockedBy}`
 
 /** Phrases courtes pour la liste des passages. */
 export function gapSentence(g: Gap) {

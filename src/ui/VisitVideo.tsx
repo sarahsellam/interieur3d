@@ -39,6 +39,9 @@ export function No3DCauses() {
     <details className="no3d-causes">
       <summary>Pourquoi ?</summary>
       <p>Sur iPad et iPhone, la 3D fonctionne avec Safari à partir d'iOS 15. Elle est coupée par le mode Isolement d'iOS (Réglages › Confidentialité et sécurité), ou quand WebGL est désactivé dans les réglages avancés de Safari. Sur ordinateur, activez l'accélération matérielle du navigateur.</p>
+      <a className="link-btn" href={`${location.pathname}?diagnostic`}>
+        Tester la 3D sur cet appareil
+      </a>
     </details>
   )
 }

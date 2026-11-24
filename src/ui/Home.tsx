@@ -198,6 +198,9 @@ export function Home() {
         <button type="button" className="link-btn" onClick={() => setPrivacy(true)}>
           Confidentialité et données
         </button>
+        <a className="link-btn" href={`${location.pathname}?diagnostic`}>
+          Tester la 3D sur cet appareil
+        </a>
         <span className="muted">Mon Intérieur 3D · modèles 3D Poly Haven (CC0)</span>
       </footer>
       {privacy && <PrivacyPage onClose={() => setPrivacy(false)} />}

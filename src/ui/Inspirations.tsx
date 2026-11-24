@@ -4,49 +4,10 @@
 import { useEffect, useState } from 'react'
 import { useProject, useStore } from '../store'
 import type { Inspiration, RefImage } from '../model/types'
-import { WALL_LABEL, WALL_ORDER } from '../model/types'
 import { imageUrl } from '../model/storage'
 import { extractPalette, suggestFromNote, type Suggestion } from '../model/inspiration'
-import { getItem, ITEM_COLORS } from '../data/catalog'
 import { Icon, ImportButton, StoredImage } from './common'
 import { PhotoColorPicker } from './ColorPicker'
-
-/** Choix de la cible d'une couleur : un mur, tous les murs ou le meuble sélectionné. */
-function ColorApply({ hex, onDone }: { hex: string; onDone: () => void }) {
-  const setWallColor = useStore((s) => s.setWallColor)
-  const setAll = useStore((s) => s.setAllWallsColor)
-  const setItemColor = useStore((s) => s.setItemColor)
-  const selection = useStore((s) => s.selection)
-  const selectedItem = useStore((s) => (s.selection?.type === 'item' ? s.layout.items.find((i) => i.uid === (s.selection as { id: string }).id) : undefined))
-  const c = selectedItem ? getItem(selectedItem.modelId) : undefined
-  const canItem = c && ITEM_COLORS[c.material].length > 0
-  return (
-    <div className="apply-menu">
-      <span className="apply-title">
-        <span className="dot" style={{ background: hex }} /> Appliquer à :
-      </span>
-      <div className="choice-row">
-        {WALL_ORDER.map((w) => (
-          <button key={w} type="button" className="chip" onClick={() => (setWallColor(w, hex), onDone())}>
-            {WALL_LABEL[w]}
-          </button>
-        ))}
-        <button type="button" className="chip" onClick={() => (setAll(hex), onDone())}>
-          Tous les murs
-        </button>
-        {canItem && selection?.type === 'item' && (
-          <button type="button" className="chip" onClick={() => (setItemColor(selection.id, hex), onDone())}>
-            {c!.name}
-          </button>
-        )}
-        <button type="button" className="chip ghost" onClick={onDone}>
-          Annuler
-        </button>
-      </div>
-      {!canItem && <span className="hint-text">Pour colorer un meuble, touchez-le d'abord dans la pièce.</span>}
-    </div>
-  )
-}
 
 /** Couleurs de la photo et idées tirées de la note, applicables à la pièce. */
 function InspirationIdeas({ i, inEditor }: { i: Inspiration; inEditor: boolean }) {
@@ -95,7 +56,7 @@ function InspirationIdeas({ i, inEditor }: { i: Inspiration; inEditor: boolean }
           ))}
         </div>
       )}
-      {inEditor && applying && <ColorApply hex={applying} onDone={() => setApplying(null)} />}
+      {inEditor && applying && <PhotoColorPicker initialColor={applying} onClose={() => setApplying(null)} />}
     </div>
   )
 }
