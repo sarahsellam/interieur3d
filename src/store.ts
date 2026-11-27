@@ -148,6 +148,9 @@ interface State {
 
   // Assistant
   ideaOpen: boolean
+  /** « Recréer la pièce depuis mes photos » : ouvert, et lancé tout de suite (depuis l'assistant de création) */
+  scan: null | { auto: boolean; estimate: boolean }
+  setScan: (v: null | { auto: boolean; estimate: boolean }) => void
   setIdeaOpen: (v: boolean) => void
   setLayoutPreview: (l: Layout | null) => void
   applyLayoutAsVersion: (l: Layout) => void
@@ -261,11 +264,13 @@ export const useStore = create<State>()((set, get) => {
     addShare: (ref) => persistProject((pp) => (pp.shares = [ref, ...(pp.shares ?? [])])),
     removeShare: (id) => persistProject((pp) => (pp.shares = (pp.shares ?? []).filter((x) => x.id !== id))),
     ideaOpen: false,
+    scan: null,
+    setScan: (scan) => set({ scan, ...(scan ? { selection: null, ideaOpen: false } : { layoutPreview: null }) }),
     panelOpen: typeof window === 'undefined' || window.innerWidth > 860,
     threeD: hasWebGL2(),
     disable3D: () => set({ threeD: false, view: 'plan' }),
     setPanelOpen: (panelOpen) => set({ panelOpen }),
-    setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null } : { layoutPreview: null }) }),
+    setIdeaOpen: (ideaOpen) => set({ ideaOpen, ...(ideaOpen ? { selection: null, scan: null } : { layoutPreview: null }) }),
 
     reloadFromStorage: () => {
       const myFurniture = loadMyFurniture()
@@ -275,7 +280,7 @@ export const useStore = create<State>()((set, get) => {
     },
     goHome: () => {
       if (get().projectId && get().dirty) get().save()
-      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, layoutPreview: null, shareId: null, shareOpen: false, compareOpen: false })
+      set({ screen: 'accueil', selection: null, pinnedImage: null, ideaOpen: false, scan: null, layoutPreview: null, shareId: null, shareOpen: false, compareOpen: false })
     },
     startWizard: () => set({ screen: 'assistant' }),
 

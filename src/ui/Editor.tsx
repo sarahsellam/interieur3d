@@ -23,6 +23,7 @@ import { InspirationBoard, PinnedImage, ProjectReferences } from './Inspirations
 import { ItemThumb, MyFurnitureSection } from './MyFurniture'
 import { ReplacePanel } from './Replace'
 import { IdeaPanel } from './Idea'
+import { RoomScanButton, RoomScanPanel } from './RoomScan'
 
 const OPENING_KINDS: OpeningKind[] = ['fenetre', 'porte-fenetre', 'porte', 'placard', 'niche']
 
@@ -507,6 +508,7 @@ function RoomSettings() {
       <section>
         <h3>Plan et photos de la pièce</h3>
         <ProjectReferences />
+        <RoomScanButton />
       </section>
     </div>
   )
@@ -1011,9 +1013,11 @@ export function EditorUI() {
   useShortcuts()
   const ideaOpen = useStore((s) => s.ideaOpen)
   const setIdeaOpen = useStore((s) => s.setIdeaOpen)
+  const scan = useStore((s) => s.scan)
   return (
     <>
       {ideaOpen && <IdeaPanel onClose={() => setIdeaOpen(false)} />}
+      {scan && <RoomScanPanel />}
       <TopBar />
       <SidePanel />
       {/* Bandeaux du haut, empilés dans un même conteneur : ils ne se recouvrent jamais */}

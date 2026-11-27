@@ -7,7 +7,7 @@ import { Home, Wizard } from './ui/Home'
 import { CATALOG } from './data/catalog'
 import { SceneBoundary } from './ui/Fallback'
 import { Plan2D } from './ui/Plan2D'
-import { useStore } from './store'
+import { shownLayout, useStore } from './store'
 import { usePlanStore } from './planStore'
 import { startAutoSync } from './model/account'
 import { ShareViewer } from './ui/Share'
@@ -87,7 +87,8 @@ export default function App() {
 function EditorScreen({ quality }: { quality: 'high' | 'low' }) {
   const threeD = useStore((s) => s.threeD)
   const disable3D = useStore((s) => s.disable3D)
-  const layout = useStore((s) => s.layout)
+  const layout = useStore(shownLayout)
+  const previewing = useStore((s) => !!s.layoutPreview)
   return (
     <div className="app">
       {threeD ? (
@@ -98,7 +99,7 @@ function EditorScreen({ quality }: { quality: 'high' | 'low' }) {
         </div>
       ) : (
         <div className="viewport plan2d-wrap">
-          <Plan2D layout={layout} interactive className="plan2d" />
+          <Plan2D layout={layout} interactive={!previewing} className="plan2d" />
         </div>
       )}
       <EditorUI />
@@ -111,7 +112,7 @@ function EditorScreen({ quality }: { quality: 'high' | 'low' }) {
 function SharedScreen({ id, quality }: { id: string; quality: 'high' | 'low' }) {
   const threeD = useStore((s) => s.threeD)
   const disable3D = useStore((s) => s.disable3D)
-  const layout = useStore((s) => s.layout)
+  const layout = useStore(shownLayout)
   const ready = useStore((s) => !!s.layoutPreview)
   return (
     <div className="app share-app">

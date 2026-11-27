@@ -1,6 +1,7 @@
 // Relais de « Mon Intérieur 3D » (Cloudflare Worker).
 // Il garde la clé de l'API Claude à l'abri (secret ANTHROPIC_API_KEY) et rend deux services :
 //   POST /idee     → deux propositions d'aménagement à partir de la pièce, des inspirations et d'une demande
+//   POST /piece-photos → plan de la pièce (meubles, portes, fenêtres) reconstruit depuis des photos
 //   POST /produit  → lecture d'une page produit (nom, photo, prix, dimensions, vendeur)
 // Seul le site de l'application peut l'appeler (vérification de l'origine).
 import Anthropic from '@anthropic-ai/sdk'
@@ -128,6 +129,110 @@ async function handleIdea(req: Request, env: Env, headers: Record<string, string
     if (response.stop_reason === 'refusal') return json({ erreur: "L'assistant n'a pas pu traiter cette demande." }, 422, headers)
     if (!response.parsed_output) return json({ erreur: "L'assistant a répondu dans un format inattendu. Réessayez." }, 502, headers)
     return json({ propositions: response.parsed_output.propositions.slice(0, 2), usage: response.usage }, 200, headers)
+  } catch (e) {
+    if (e instanceof Anthropic.RateLimitError) return json({ erreur: 'Trop de demandes en même temps. Réessayez dans une minute.' }, 429, headers)
+    if (e instanceof Anthropic.AuthenticationError) return json({ erreur: 'La clé de l’API Claude est invalide ou absente dans le relais.' }, 500, headers)
+    if (e instanceof Anthropic.APIError) return json({ erreur: `Erreur du service Claude (${e.status}).` }, 502, headers)
+    return json({ erreur: 'Erreur inattendue du relais.' }, 500, headers)
+  }
+}
+
+// ---------------------------------------------------------------- /piece-photos
+
+const ScanRequest = z.object({
+  photos: z.array(z.string().max(1_600_000)).min(1).max(4), // JPEG en base64
+  typePiece: z.string().max(40).default('chambre'),
+  dimensionsConnues: z.object({ largeur: z.number(), longueur: z.number(), hauteur: z.number() }).nullable().default(null),
+  catalogue: z.array(z.unknown()).max(400),
+  sols: z.array(z.unknown()).max(40).default([]),
+})
+
+const MurId = z.enum(['nord', 'est', 'sud', 'ouest'])
+
+const ScanResponse = z.object({
+  orientation: z.string().describe("Une phrase : quel mur est le mur 1 et d'où sont prises les photos"),
+  dimensions: z.object({ largeur: z.number(), longueur: z.number(), hauteur: z.number() }).describe('Dimensions intérieures estimées en mètres (largeur = mur 1, longueur = mur 2)'),
+  murs: z.object({ nord: z.string().nullable(), est: z.string().nullable(), sud: z.string().nullable(), ouest: z.string().nullable() }).describe('Couleur #rrggbb vue sur chaque mur, null si le mur ne se voit pas'),
+  sol: z.string().nullable().describe('Identifiant du sol le plus proche dans la liste fournie, ou null'),
+  ouvertures: z.array(
+    z.object({
+      type: z.enum(['fenetre', 'porte-fenetre', 'porte', 'placard', 'niche']),
+      mur: MurId,
+      depuisLaGauche: z.number().describe("Distance en mètres entre l'angle gauche du mur (vu depuis l'intérieur de la pièce, face au mur) et le CENTRE de l'ouverture"),
+      largeur: z.number(),
+      hauteur: z.number(),
+      allege: z.number().describe('Hauteur du bas au-dessus du sol (0 pour une porte)'),
+      charniere: z.enum(['gauche', 'droite']).nullable().describe('Côté des charnières vu depuis la pièce, pour une porte'),
+    }),
+  ),
+  meubles: z.array(
+    z.object({
+      vu: z.string().describe('Ce que tu vois, en français court (ex. « lit double en bois clair »)'),
+      modelId: z.string().describe('Meuble le plus proche dans le catalogue fourni'),
+      x: z.number(),
+      z: z.number(),
+      rotationDeg: z.number(),
+      largeur: z.number().describe('Largeur réelle estimée (m), le long de la face avant'),
+      profondeur: z.number(),
+      hauteur: z.number(),
+      couleur: z.string().nullable().describe('Couleur principale #rrggbb vue, ou null'),
+      poseSurMeuble: z.boolean().describe('true pour un objet posé sur un autre meuble (lampe, plante sur une commode…)'),
+    }),
+  ),
+  incertain: z.string().describe("Ce qui n'était pas visible ou reste approximatif, en une ou deux phrases simples"),
+})
+
+const SCAN_SYSTEM = `Tu es métreur et architecte d'intérieur. À partir de photos d'une vraie pièce, tu reconstruis son plan : dimensions, portes, fenêtres, placards, et TOUS les meubles visibles avec leur position.
+
+Repère (vue du dessus) : origine au centre de la pièce, en mètres ; x va de la gauche (mur 4, « ouest ») vers la droite (mur 2, « est ») ; z va du haut (mur 1, « nord ») vers le bas (mur 3, « sud »). La largeur de la pièce est la longueur des murs 1 et 3, sa longueur celle des murs 2 et 4.
+Choix des murs : le mur 1 (« nord ») est le mur qu'on voit en face sur la PREMIÈRE photo. En tournant dans le sens des aiguilles d'une montre vu du dessus : mur 2 (« est ») à droite de ce mur, mur 3 (« sud ») derrière le photographe, mur 4 (« ouest ») à gauche. Sers-toi des autres photos (même meubles, mêmes fenêtres vus sous un autre angle) pour situer les autres murs.
+
+Meubles : x, z = centre de l'encombrement au sol ; rotationDeg : 0 = la face avant regarde vers le mur 3 (dos contre le mur 1) ; 90 = vers le mur 2 (dos au mur 4) ; 180 = vers le mur 1 ; 270 = vers le mur 4. La face avant d'un lit est le pied du lit (la tête est contre le mur au dos). Avec 90 ou 270, la largeur s'étend le long de z.
+
+Règles :
+1. Liste chaque meuble visible une seule fois, même s'il apparaît sur plusieurs photos (lit, chevets, commode, armoire, bureau, chaise, canapé, fauteuil, étagère, table, tapis, plantes, lampes sur pied…). Ne liste pas les petits objets (livres, cadres) ni les rideaux.
+2. modelId : choisis le meuble le plus proche dans le catalogue fourni uniquement (même catégorie et usage). Donne quand même les dimensions réelles que tu estimes.
+3. Estime les tailles d'après des repères standards : porte ≈ 0,83 × 2,04 m, prise à 0,3 m du sol, lit double 1,40 ou 1,60 m de large, hauteur sous plafond ≈ 2,50 m, carrelage, lames de parquet.
+4. Chaque meuble reste dans la pièce ; un meuble contre un mur a son dos à environ 2 cm du mur. Pas de chevauchement sauf le tapis et une chaise rangée sous une table ou un bureau.
+5. Si des dimensions connues sont fournies, utilise-les exactement et place tout en proportion.
+6. Ouvertures : une entrée par fenêtre, porte, porte-fenêtre, placard intégré ou niche visible, sur le bon mur. Une fenêtre à deux battants est UNE fenêtre.
+7. Couleurs : celles des murs et des meubles telles qu'elles apparaissent en lumière normale (corrige le jaune d'une lampe).
+8. Sois honnête dans « incertain » sur ce que les photos ne montrent pas.`
+
+async function handleScan(req: Request, env: Env, headers: Record<string, string>) {
+  const body = ScanRequest.safeParse(await req.json().catch(() => null))
+  if (!body.success) return json({ erreur: 'Demande illisible.' }, 400, headers)
+  const { photos, typePiece, dimensionsConnues, catalogue, sols } = body.data
+  const content: Anthropic.Beta.BetaContentBlockParam[] = []
+  photos.forEach((data, i) => {
+    content.push({ type: 'text', text: `Photo ${i + 1}${i === 0 ? ' (le mur en face est le mur 1)' : ''} :` })
+    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } })
+  })
+  content.push({ type: 'text', text: `Type de pièce : ${typePiece}` })
+  content.push({
+    type: 'text',
+    text: dimensionsConnues
+      ? `Dimensions intérieures mesurées : largeur (murs 1 et 3) ${dimensionsConnues.largeur} m, longueur (murs 2 et 4) ${dimensionsConnues.longueur} m, hauteur ${dimensionsConnues.hauteur} m.`
+      : 'Dimensions inconnues : estime-les.',
+  })
+  content.push({ type: 'text', text: `Sols disponibles (JSON) : ${JSON.stringify(sols)}` })
+  content.push({ type: 'text', text: `Catalogue (JSON) : ${JSON.stringify(catalogue)}` })
+  content.push({ type: 'text', text: 'Reconstruis le plan de cette pièce avec tous ses meubles et ouvertures.' })
+
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
+  try {
+    const response = await client.beta.messages.parse({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'high', format: betaZodOutputFormat(ScanResponse) },
+      system: SCAN_SYSTEM,
+      messages: [{ role: 'user', content }],
+    })
+    if (response.stop_reason === 'refusal') return json({ erreur: "L'assistant n'a pas pu lire ces photos." }, 422, headers)
+    if (!response.parsed_output) return json({ erreur: "L'assistant a répondu dans un format inattendu. Réessayez." }, 502, headers)
+    return json({ piece: response.parsed_output, usage: response.usage }, 200, headers)
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return json({ erreur: 'Trop de demandes en même temps. Réessayez dans une minute.' }, 429, headers)
     if (e instanceof Anthropic.AuthenticationError) return json({ erreur: 'La clé de l’API Claude est invalide ou absente dans le relais.' }, 500, headers)
@@ -336,6 +441,7 @@ export default {
 
     if (!env.ANTHROPIC_API_KEY) return json({ erreur: 'Le relais n’a pas encore de clé API Claude.' }, 500, headers)
     if (req.method === 'POST' && path === '/idee') return handleIdea(req, env, headers)
+    if (req.method === 'POST' && path === '/piece-photos') return handleScan(req, env, headers)
     if (req.method === 'POST' && path === '/produit') return handleProduct(req, env, headers)
     return json({ erreur: 'Adresse inconnue.' }, 404, headers)
   },

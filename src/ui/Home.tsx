@@ -6,6 +6,7 @@ import type { RefImage, RoomType } from '../model/types'
 import { ROOM_TYPE_LABEL } from '../model/types'
 import type { StartKind } from '../model/templates'
 import { deleteImage } from '../model/storage'
+import { aiReady } from '../model/ai'
 import { Icon, MeasureField } from './common'
 import { InspirationBoard, ReferenceList } from './Inspirations'
 import { BackupSection, InstallCard } from './AppShell'
@@ -308,7 +309,15 @@ export function Wizard() {
   const [room, setRoom] = useState({ width: 3.6, depth: 4, height: 2.5 })
   const [refs, setRefs] = useState<RefImage[]>([])
 
-  const finish = () => createProject({ name, roomType, start, room, references: refs })
+  const photos = refs.filter((r) => r.kind === 'photo').length
+  const [autoScan, setAutoScan] = useState(true)
+  const [estimate, setEstimate] = useState(false)
+  const scanOn = photos > 0 && autoScan && aiReady()
+  const finish = () => {
+    createProject({ name, roomType, start: scanOn && start === 'exemple' ? 'vide' : start, room, references: refs })
+    // Les photos sont lues dès l'ouverture de la pièce
+    if (scanOn) useStore.getState().setScan({ auto: true, estimate })
+  }
 
   return (
     <div className="wizard">
@@ -385,6 +394,24 @@ export function Wizard() {
                 setRefs(refs.filter((x) => x.id !== id))
               }}
             />
+            {photos > 0 && aiReady() && (
+              <>
+                <label className="check-row">
+                  <input type="checkbox" checked={autoScan} onChange={(e) => setAutoScan(e.target.checked)} />
+                  <span>
+                    <strong>Placer automatiquement les meubles, portes et fenêtres de mes photos</strong>
+                    <br />
+                    <span className="muted">Le mur qu'on voit en face sur la 1ʳᵉ photo devient le mur 1. Environ 15 centimes par lecture.</span>
+                  </span>
+                </label>
+                {autoScan && (
+                  <label className="check-row">
+                    <input type="checkbox" checked={estimate} onChange={(e) => setEstimate(e.target.checked)} />
+                    <span>Je n'ai pas mesuré : estimer les dimensions d'après les photos</span>
+                  </label>
+                )}
+              </>
+            )}
           </section>
 
           <footer className="wizard-foot">
