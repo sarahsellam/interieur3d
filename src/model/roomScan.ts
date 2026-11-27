@@ -170,7 +170,8 @@ export function buildScannedLayout(base: Layout, scan: RoomScan, keepDims: boole
     const d = clamp(num(m.profondeur, c.depth), 0.15, 4)
     const h = clamp(num(m.hauteur, c.height), 0.05, room.height)
     if (!c.custom && (Math.abs(w - c.width) > 0.08 || Math.abs(d - c.depth) > 0.08 || Math.abs(h - c.height) > 0.1)) it.dims = { width: r2(w), depth: r2(d), height: r2(h) }
-    if (isHex(m.couleur) && !c.custom) it.color = m.couleur
+    // Couleur vue (pas pour les plantes : leur feuillage garde ses vraies teintes)
+    if (isHex(m.couleur) && !c.custom && c.material !== 'vegetal') it.color = m.couleur
     if (m.poseSurMeuble) it.onTop = true
     Object.assign(it, clampToRoom(it, room))
     items.push(it)

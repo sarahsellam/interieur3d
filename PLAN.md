@@ -173,6 +173,15 @@ autre couleur et voir la différence entre deux versions.
 - Pas de paiement unique sur le site : il faudrait devenir revendeur (encaissement, livraisons,
   retours). Les liens deviendront des liens affiliés à l'étape 8.
 
+## Recréer la pièce depuis des photos ✅
+- 1 à 4 photos de la vraie pièce (création du projet ou onglet « Pièce ») : l'assistant
+  (relais /piece-photos) reconnaît meubles, portes, fenêtres, placards, couleurs des murs et sol,
+  les place sur le plan ; dimensions mesurées gardées, ou estimées d'après les photos.
+- Le mur vu en face sur la photo 1 devient le mur 1. Aperçu, puis « Garder » = nouvelle version.
+- L'application vérifie : meubles dans la pièce, ouvertures sur leur mur, doublons, chevauchements.
+- Environ 15 centimes par lecture. Essai réel (une photo de la chambre exemple) : 3,60 × 4,40 m
+  estimés pour 3,60 × 4,00, fenêtre, porte-fenêtre, coiffeuse, tabouret, commode bien placés.
+
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.
