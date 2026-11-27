@@ -166,6 +166,13 @@ autre couleur et voir la différence entre deux versions.
 - Page « Tester la 3D sur cet appareil » (?diagnostic) : prise en charge, carte graphique,
   fluidité mesurée, vérification des gestes, résultat à copier.
 
+## Liste d'achats ✅
+- « Ma liste d'achats » (bouton du budget) : achats regroupés par magasin, quantités, total par
+  magasin et général, cases « Acheté » et reste à payer, « Ouvrir chez … » produit par produit,
+  « Tout ajouter au panier Amazon » (lien multi-produits), copie en texte et PDF avec liens.
+- Pas de paiement unique sur le site : il faudrait devenir revendeur (encaissement, livraisons,
+  retours). Les liens deviendront des liens affiliés à l'étape 8.
+
 ## Étape 8 — Publicité et affiliation
 - Bandeaux discrets avec consentement cookies.
 - Liens d'affiliation vers des meubles similaires.

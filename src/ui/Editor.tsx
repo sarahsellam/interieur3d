@@ -13,6 +13,7 @@ import { SharePanel } from './Share'
 import { ExportPanel } from './Export'
 import { CompareButton, ComparePanel } from './Compare'
 import { Guide } from './Guide'
+import { ShoppingList, shoppingList } from './Shopping'
 import { isSmall } from '../model/clearance'
 import { DecorControls, DecorSection, TextilesPanel, textileKind } from './Decor'
 import { PassagesCard, PassagesChip } from './Passages'
@@ -115,13 +116,17 @@ function BudgetButton() {
   const layout = useStore((s) => s.layout)
   const select = useStore((s) => s.select)
   const [open, setOpen] = useState(false)
+  const [shopping, setShopping] = useState(false)
   const b = useMemo(() => budgetOf(layout, itemPrice), [layout])
+  const remaining = useMemo(() => shoppingList(layout).remaining, [layout])
+  const someBought = layout.items.some((i) => i.status === 'a-acheter' && i.bought)
   return (
     <div className="budget">
       <button type="button" className="budget-btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <span className="muted">À acheter</span>
-        <strong>{fmtPrice(b.total)}</strong>
+        <span className="muted">{someBought ? 'Reste' : 'À acheter'}</span>
+        <strong>{fmtPrice(someBought ? remaining : b.total)}</strong>
       </button>
+      {shopping && <ShoppingList onClose={() => setShopping(false)} />}
       {open && (
         <div className="popover right budget-pop" role="dialog" aria-label="Budget">
           <div className="popover-head">
@@ -159,6 +164,18 @@ function BudgetButton() {
             <span>Total des achats prévus</span>
             <strong>{fmtPrice(b.total)}</strong>
           </div>
+          {b.toBuy.length > 0 && (
+            <button
+              type="button"
+              className="btn primary full"
+              onClick={() => {
+                setOpen(false)
+                setShopping(true)
+              }}
+            >
+              {Icon.euro} Ma liste d'achats, par magasin
+            </button>
+          )}
           {b.missing > 0 && (
             <p className="hint-text">
               {b.missing} achat{b.missing > 1 ? 's' : ''} sans prix : touchez la ligne pour saisir le prix.

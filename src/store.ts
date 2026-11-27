@@ -71,6 +71,8 @@ interface State {
   focusPoint: { x: number; z: number; y: number; n: number } | null
   showPoint: (x: number, z: number, y?: number) => void
   setOnTop: (id: string, v: boolean) => void
+  /** Coche « Acheté » dans la liste d'achats (pour un ou plusieurs exemplaires) */
+  setBought: (ids: string[], v: boolean) => void
   /** Comparatif de deux versions ouvert */
   compareOpen: boolean
   setCompareOpen: (v: boolean) => void
@@ -246,6 +248,7 @@ export const useStore = create<State>()((set, get) => {
     setPassageFocus: (passageFocus) => set({ passageFocus }),
     focusPoint: null,
     showPoint: (x, z, y = 0.4) => set({ focusPoint: { x, z, y, n: Date.now() } }),
+    setBought: (ids, v) => edit('achete', (l) => l.items.forEach((it) => ids.includes(it.uid) && (it.bought = v || undefined))),
     setOnTop: (id, v) => edit(`dessus-${id}`, (l) => l.items.forEach((it) => it.uid === id && (it.onTop = v || undefined))),
     setCompareOpen: (compareOpen) => set({ compareOpen, selection: null }),
     setShareOpen: (shareOpen) => set({ shareOpen }),

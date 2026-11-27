@@ -76,6 +76,8 @@ export interface PlacedItem {
   status?: ItemStatus
   /** Prix saisi pour cet exemplaire (sinon celui de la fiche « Mes meubles ») */
   price?: number | null
+  /** Achat fait (coché dans la liste d'achats) */
+  bought?: boolean
   /** Posé sur un meuble (plante, lampe, objet) : ne gêne pas le passage, dessiné sur le meuble */
   onTop?: boolean
   /** Linge de lit et coussins (lits et canapé en lin) */
